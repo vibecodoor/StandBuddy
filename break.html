@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Break Time!</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      user-select: none;
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    .icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 48px;
+      font-weight: 300;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 24px;
+      opacity: 0.9;
+      margin-bottom: 40px;
+    }
+
+    .timer {
+      font-size: 72px;
+      font-weight: 200;
+      margin-bottom: 40px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-container {
+      width: 300px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: white;
+      border-radius: 3px;
+      transition: width 1s linear;
+    }
+
+    .emergency-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .emergency-btn {
+      padding: 12px 30px;
+      font-size: 14px;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: rgba(255, 255, 255, 0.5);
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .emergency-btn:hover {
+      border-color: rgba(255, 255, 255, 0.5);
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .emergency-btn.holding {
+      border-color: rgba(255, 150, 150, 0.6);
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .emergency-btn .hold-progress {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 0%;
+      background: rgba(255, 100, 100, 0.4);
+      transition: width 0.05s linear;
+      border-radius: 30px;
+    }
+
+    .emergency-btn span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .emergency-hint {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.5);
+      min-height: 20px;
+    }
+
+    .emergency-hint.holding {
+      color: rgba(255, 200, 200, 0.8);
+    }
+
+    .tip-block {
+      margin-top: 30px;
+      max-width: 500px;
+      padding: 20px 30px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+    }
+
+    .tip-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.7;
+      margin-bottom: 8px;
+    }
+
+    .tip-category {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      margin-left: 8px;
+    }
+
+    .tip-text {
+      font-size: 18px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">&#129336;</div>
+    <h1>Time to Stand!</h1>
+    <p class="subtitle">Take a moment to stretch and move around</p>
+    <div class="timer" id="timer">0:00</div>
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="emergency-section">
+      <button class="emergency-btn" id="emergencyBtn">
+        <div class="hold-progress" id="holdProgress"></div>
+        <span id="btnText">Emergency Unlock</span>
+      </button>
+      <p class="emergency-hint" id="emergencyHint">Hold for 5 seconds to unlock</p>
+    </div>
+
+    <div class="tip-block" id="tipBlock">
+      <p class="tip-label">Tip for this break<span class="tip-category" id="tipCategory"></span></p>
+      <p class="tip-text" id="tipText"></p>
+    </div>
+  </div>
+
+  <script>
+    let totalDuration = 60;
+    let remaining = 60;
+    let timerInterval = null;
+
+    const timerEl = document.getElementById('timer');
+    const progressBar = document.getElementById('progressBar');
+    const emergencyBtn = document.getElementById('emergencyBtn');
+    const holdProgress = document.getElementById('holdProgress');
+    const emergencyHint = document.getElementById('emergencyHint');
+    const tipBlock = document.getElementById('tipBlock');
+    const tipCategory = document.getElementById('tipCategory');
+    const tipText = document.getElementById('tipText');
+
+    let holdStartTime = null;
+    let holdInterval = null;
+    const HOLD_DURATION = 5000;
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function updateDisplay() {
+      timerEl.textContent = formatTime(remaining);
+      const progress = ((totalDuration - remaining) / totalDuration) * 100;
+      progressBar.style.width = `${progress}%`;
+    }
+
+    function startCountdown() {
+      updateDisplay();
+      timerInterval = setInterval(() => {
+        remaining--;
+        updateDisplay();
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+        }
+      }, 1000);
+    }
+
+    function startHold() {
+      holdStartTime = Date.now();
+      emergencyBtn.classList.add('holding');
+      emergencyHint.classList.add('holding');
+      emergencyHint.textContent = 'Keep holding…';
+
+      holdInterval = setInterval(() => {
+        const elapsed = Date.now() - holdStartTime;
+        const percent = Math.min((elapsed / HOLD_DURATION) * 100, 100);
+        const secondsLeft = Math.ceil((HOLD_DURATION - elapsed) / 1000);
+
+        holdProgress.style.width = `${percent}%`;
+
+        if (secondsLeft > 0) {
+          emergencyHint.textContent = `Keep holding… ${secondsLeft}s`;
+        }
+
+        if (elapsed >= HOLD_DURATION) {
+          clearInterval(holdInterval);
+          doUnlock();
+        }
+      }, 50);
+    }
+
+    function cancelHold() {
+      if (holdInterval) {
+        clearInterval(holdInterval);
+        holdInterval = null;
+      }
+      holdStartTime = null;
+      holdProgress.style.width = '0%';
+      emergencyBtn.classList.remove('holding');
+      emergencyHint.classList.remove('holding');
+      emergencyHint.textContent = 'Hold for 5 seconds to unlock';
+    }
+
+    function doUnlock() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+      }
+      window.electronAPI.skipBreak();
+    }
+
+    emergencyBtn.addEventListener('mousedown', startHold);
+    emergencyBtn.addEventListener('mouseup', cancelHold);
+    emergencyBtn.addEventListener('mouseleave', cancelHold);
+    emergencyBtn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      startHold();
+    });
+    emergencyBtn.addEventListener('touchend', cancelHold);
+    emergencyBtn.addEventListener('touchcancel', cancelHold);
+
+    window.electronAPI.onBreakStart((data) => {
+      totalDuration = data.duration;
+      remaining = data.duration;
+      startCountdown();
+
+      if (data.tip) {
+        tipText.textContent = data.tip.text;
+        if (data.tip.category) {
+          tipCategory.textContent = data.tip.category;
+        } else {
+          tipCategory.style.display = 'none';
+        }
+      } else {
+        tipBlock.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

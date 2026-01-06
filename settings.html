@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StandBuddy Settings</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 24px;
+      user-select: none;
+    }
+
+    h1 {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .setting-group {
+      margin-bottom: 24px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    .presets {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .preset-btn {
+      padding: 8px 14px;
+      font-size: 13px;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      background: white;
+      color: #555;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .preset-btn:hover {
+      border-color: #4a90d9;
+      color: #4a90d9;
+    }
+
+    .preset-btn.active {
+      background: #4a90d9;
+      border-color: #4a90d9;
+      color: white;
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .input-row span {
+      color: #888;
+      font-size: 13px;
+    }
+
+    input[type="number"] {
+      width: 80px;
+      padding: 8px 10px;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: white;
+      text-align: center;
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #4a90d9;
+    }
+
+    input[type="number"].error {
+      border-color: #e74c3c;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .checkbox-group label {
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    button.action {
+      flex: 1;
+      padding: 12px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-cancel {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    .btn-cancel:hover {
+      background: #d0d0d0;
+    }
+
+    .btn-save {
+      background: #4a90d9;
+      color: white;
+    }
+
+    .btn-save:hover {
+      background: #3a7fc8;
+    }
+  </style>
+</head>
+<body>
+  <h1>StandBuddy Settings</h1>
+
+  <div class="setting-group">
+    <label>Reminder Interval</label>
+    <div class="presets" id="intervalPresets">
+      <button class="preset-btn" data-value="30">30</button>
+      <button class="preset-btn" data-value="35">35</button>
+      <button class="preset-btn" data-value="40">40</button>
+      <button class="preset-btn" data-value="45">45</button>
+      <button class="preset-btn" data-value="50">50</button>
+      <button class="preset-btn" data-value="60">60</button>
+    </div>
+    <div class="input-row">
+      <span>or custom:</span>
+      <input type="number" id="interval" min="1" value="30">
+      <span>minutes</span>
+    </div>
+  </div>
+
+  <div class="setting-group">
+    <label>Break Duration</label>
+    <div class="presets" id="breakPresets">
+      <button class="preset-btn" data-value="30">30</button>
+      <button class="preset-btn" data-value="60">60</button>
+      <button class="preset-btn" data-value="90">90</button>
+      <button class="preset-btn" data-value="120">120</button>
+    </div>
+    <div class="input-row">
+      <span>or custom:</span>
+      <input type="number" id="breakDuration" min="10" value="60">
+      <span>seconds</span>
+    </div>
+  </div>
+
+  <div class="checkbox-group">
+    <input type="checkbox" id="launchAtLogin">
+    <label for="launchAtLogin">Launch at startup</label>
+  </div>
+
+  <div class="buttons">
+    <button class="action btn-cancel" id="cancelBtn">Cancel</button>
+    <button class="action btn-save" id="saveBtn">Save</button>
+  </div>
+
+  <script>
+    const intervalInput = document.getElementById('interval');
+    const intervalPresets = document.getElementById('intervalPresets');
+
+    const breakInput = document.getElementById('breakDuration');
+    const breakPresets = document.getElementById('breakPresets');
+
+    const launchAtLoginCheckbox = document.getElementById('launchAtLogin');
+    const saveBtn = document.getElementById('saveBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+
+    function updatePresetButtons(container, input) {
+      const value = parseInt(input.value, 10);
+      container.querySelectorAll('.preset-btn').forEach(btn => {
+        const presetVal = parseInt(btn.dataset.value, 10);
+        btn.classList.toggle('active', presetVal === value);
+      });
+    }
+
+    function setupPresets(container, input) {
+      container.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          input.value = btn.dataset.value;
+          updatePresetButtons(container, input);
+          input.classList.remove('error');
+        });
+      });
+    }
+
+    setupPresets(intervalPresets, intervalInput);
+    setupPresets(breakPresets, breakInput);
+
+    intervalInput.addEventListener('input', () => {
+      updatePresetButtons(intervalPresets, intervalInput);
+      validateInterval();
+    });
+
+    breakInput.addEventListener('input', () => {
+      updatePresetButtons(breakPresets, breakInput);
+      validateBreak();
+    });
+
+    function validateInterval() {
+      const val = parseInt(intervalInput.value, 10);
+      if (isNaN(val) || val < 1) {
+        intervalInput.classList.add('error');
+        return false;
+      } else {
+        intervalInput.classList.remove('error');
+        return true;
+      }
+    }
+
+    function validateBreak() {
+      const val = parseInt(breakInput.value, 10);
+      if (isNaN(val) || val < 10) {
+        breakInput.classList.add('error');
+        return false;
+      } else {
+        breakInput.classList.remove('error');
+        return true;
+      }
+    }
+
+    window.electronAPI.onSettingsLoad((settings) => {
+      intervalInput.value = settings.interval;
+      breakInput.value = settings.breakDuration;
+      launchAtLoginCheckbox.checked = settings.launchAtLogin || false;
+      updatePresetButtons(intervalPresets, intervalInput);
+      updatePresetButtons(breakPresets, breakInput);
+    });
+
+    saveBtn.addEventListener('click', () => {
+      const intervalValid = validateInterval();
+      const breakValid = validateBreak();
+
+      if (!intervalValid) {
+        intervalInput.focus();
+        return;
+      }
+      if (!breakValid) {
+        breakInput.focus();
+        return;
+      }
+
+      let interval = Math.max(1, parseInt(intervalInput.value, 10));
+      let breakDuration = Math.max(10, parseInt(breakInput.value, 10));
+
+      window.electronAPI.saveSettings({
+        interval: interval,
+        breakDuration: breakDuration,
+        launchAtLogin: launchAtLoginCheckbox.checked
+      });
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      window.electronAPI.cancelSettings();
+    });
+  </script>
+</body>
+</html>

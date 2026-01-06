@@ -1,0 +1,55 @@
+{
+  "name": "standbuddy",
+  "version": "1.0.1",
+  "description": "A tray app that reminds you to take standing breaks",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:zip": "electron-builder --win zip --x64 && node scripts/set-icon.js"
+  },
+  "keywords": [
+    "electron",
+    "tray",
+    "stand",
+    "break",
+    "reminder"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "rcedit": "^5.0.2"
+  },
+  "build": {
+    "appId": "com.standbuddy.app",
+    "productName": "StandBuddy",
+    "files": [
+      "main.js",
+      "preload.js",
+      "*.html",
+      "tips.json"
+    ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "icon": "assets/tray.ico",
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false
+    }
+  }
+}
