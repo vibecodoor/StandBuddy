@@ -26,7 +26,7 @@ A Windows tray application that reminds you to take standing breaks at regular i
 Requires [Node.js](https://nodejs.org/) (v18 or later).
 
 ```bash
-npm install
+npm ci
 npm start
 ```
 
@@ -35,10 +35,20 @@ npm start
 To create a release ZIP:
 
 ```bash
+npm ci
 npm run dist:zip
 ```
 
 Output: `dist/StandBuddy-x.x.x-win.zip`
+
+## Verify Dependencies
+
+Before building, verify dependency integrity:
+
+```bash
+npm run verify:deps   # Check deps, audit, registry
+npm run verify:lock   # Ensure lock file unchanged
+```
 
 ## Settings & Data
 

@@ -1,11 +1,13 @@
 {
   "name": "standbuddy",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A tray app that reminds you to take standing breaks",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist:zip": "electron-builder --win zip --x64 && node scripts/set-icon.js"
+    "dist:zip": "electron-builder --win zip --x64 && node scripts/set-icon.js",
+    "verify:deps": "npm ci --ignore-scripts && npm ls --depth=0 && npm audit --audit-level=high && npm config get registry",
+    "verify:lock": "npm ci --ignore-scripts && git diff --exit-code package-lock.json"
   },
   "keywords": [
     "electron",
@@ -17,7 +19,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^28.0.0",
+    "electron": "^35.7.5",
     "electron-builder": "^24.9.1",
     "rcedit": "^5.0.2"
   },
