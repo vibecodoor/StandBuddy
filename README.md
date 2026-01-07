@@ -21,39 +21,6 @@ A Windows tray application that reminds you to take standing breaks at regular i
 
 **Note**: Windows SmartScreen may show an "Unknown publisher" warning since the app is not code-signed. Click "More info" then "Run anyway" to proceed.
 
-## Run from Source
-
-Requires [Node.js](https://nodejs.org/) (v18 or later).
-
-```bash
-npm ci
-npm start
-```
-
-## Build
-
-To create a release ZIP:
-
-```bash
-npm ci
-npm run dist:zip
-```
-
-Output: `dist/StandBuddy-x.x.x-win.zip`
-
-## Settings & Data
-
-User settings are stored in:
-
-```
-%APPDATA%\standbuddy\settings.json
-```
-
-On Windows, this is typically:
-```
-C:\Users\<YourName>\AppData\Roaming\standbuddy\settings.json
-```
-
 ## License
 
 MIT
