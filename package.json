@@ -5,9 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist:zip": "electron-builder --win zip --x64 && node scripts/set-icon.js",
-    "verify:deps": "npm ci --ignore-scripts && npm ls --depth=0 && npm audit --audit-level=high && npm config get registry",
-    "verify:lock": "npm ci --ignore-scripts && git diff --exit-code package-lock.json"
+    "dist:zip": "electron-builder --win zip --x64 && node scripts/set-icon.js"
   },
   "keywords": [
     "electron",

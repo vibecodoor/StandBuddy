@@ -41,15 +41,6 @@ npm run dist:zip
 
 Output: `dist/StandBuddy-x.x.x-win.zip`
 
-## Verify Dependencies
-
-Before building, verify dependency integrity:
-
-```bash
-npm run verify:deps   # Check deps, audit, registry
-npm run verify:lock   # Ensure lock file unchanged
-```
-
 ## Settings & Data
 
 User settings are stored in:
