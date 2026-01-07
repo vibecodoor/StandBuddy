@@ -1,6 +1,6 @@
 # StandBuddy
 
-A Windows tray application that reminds you to take standing breaks at regular intervals.
+A small Windows tray application that reminds you to take standing breaks.
 
 ## Features
 
@@ -18,6 +18,8 @@ A Windows tray application that reminds you to take standing breaks at regular i
 2. Download the latest `StandBuddy-x.x.x-win.zip`
 3. Extract the ZIP to any folder
 4. Run `StandBuddy.exe`
+
+That’s it. The app runs in your system tray.
 
 **Note**: Windows SmartScreen may show an "Unknown publisher" warning since the app is not code-signed. Click "More info" then "Run anyway" to proceed.
 
