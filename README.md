@@ -9,7 +9,7 @@ A small Windows tray application that reminds you to take standing breaks.
 - **Health tips**: Displays a random tip during each break
 - **Configurable intervals**: Set your work interval (default: 30 min) and break duration (default: 60 sec)
 - **Pause/Resume**: Right-click the tray icon to pause reminders
-- **Launch at login**: Optional auto-start with Windows
+- **Launch at startup**: Optional auto-start with Windows
 - **Emergency unlock**: Hold the Skip button for 5 seconds to dismiss the break early
 
 ## Download (Windows)
