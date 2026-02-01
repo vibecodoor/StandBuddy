@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-warm">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StandBuddy Stats</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="themes.css">
+  <style>
+    :root {
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 14px;
+      --radius-full: 100px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-base);
+      padding: 24px 20px;
+      user-select: none;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    h1 {
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 24px;
+      text-align: center;
+      letter-spacing: -0.2px;
+    }
+
+    .section {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 14px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 14px 10px;
+      background: var(--bg-stat);
+      border-radius: var(--radius-md);
+    }
+
+    .stat-value {
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-top: 4px;
+      letter-spacing: 0.2px;
+    }
+
+    .streak-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+    }
+
+    .streak-number {
+      font-size: 48px;
+      font-weight: 300;
+      color: var(--accent);
+      letter-spacing: -1px;
+    }
+
+    .streak-text {
+      text-align: left;
+    }
+
+    .streak-label {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-primary);
+    }
+
+    .streak-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .week-chart {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      height: 80px;
+      padding: 0 8px;
+      margin-bottom: 12px;
+    }
+
+    .day-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      max-width: 50px;
+    }
+
+    .bar-fill {
+      width: 22px;
+      background: linear-gradient(180deg, var(--accent) 0%, #b8955b 100%);
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      transition: height 0.4s ease;
+    }
+
+    .bar-fill.empty {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .day-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-top: 8px;
+      letter-spacing: 0.3px;
+    }
+
+    .day-count {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+      min-height: 14px;
+    }
+
+    .avg-info {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding-top: 12px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .achievement {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 6px;
+      border-radius: var(--radius-md);
+      background: var(--bg-stat);
+      transition: all 0.2s ease;
+    }
+
+    .achievement.locked {
+      opacity: 0.35;
+      filter: grayscale(1);
+    }
+
+    .achievement.unlocked {
+      background: var(--accent-soft);
+      box-shadow: inset 0 0 0 1px var(--accent-glow);
+    }
+
+    .achievement-icon {
+      font-size: 24px;
+      margin-bottom: 6px;
+    }
+
+    .achievement-name {
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-align: center;
+      line-height: 1.3;
+      letter-spacing: 0.1px;
+    }
+
+    .achievement[title] {
+      cursor: help;
+    }
+
+    .close-btn {
+      display: block;
+      width: 100%;
+      padding: 13px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      transition: all 0.15s ease;
+      margin-top: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .close-btn:hover {
+      background: var(--bg-base);
+      border-color: rgba(0, 0, 0, 0.1);
+    }
+
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .reset-btn {
+      padding: 10px 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.15s ease;
+    }
+
+    .reset-btn:hover {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(26, 22, 18, 0.5);
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-overlay.visible {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      max-width: 320px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    .modal-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .modal-btn {
+      padding: 10px 18px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .modal-btn.cancel {
+      background: var(--bg-stat);
+      color: var(--text-secondary);
+    }
+
+    .modal-btn.cancel:hover {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .modal-btn.danger {
+      background: var(--danger);
+      color: var(--text-on-accent);
+    }
+
+    .modal-btn.danger:hover {
+      background: #b54f3c;
+    }
+
+    .total-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: var(--text-on-accent);
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 14px;
+      letter-spacing: 0.2px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Stats & Achievements</h1>
+
+  <div class="section">
+    <div class="section-title">Today</div>
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-value" id="todayCompleted">0</div>
+        <div class="stat-label">Completed</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="todayEmergency">0</div>
+        <div class="stat-label">Emergency</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="todayShown">0</div>
+        <div class="stat-label">Shown</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="todayMinutes">0</div>
+        <div class="stat-label">Break Minutes</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Active Streak</div>
+    <div class="streak-display">
+      <div class="streak-number" id="streakDays">0</div>
+      <div class="streak-text">
+        <div class="streak-label">consecutive days</div>
+        <div class="streak-sub">with at least 1 completed break</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Last 7 Days</div>
+    <div class="week-chart" id="weekChart"></div>
+    <div class="avg-info" id="avgInfo">Average interval: -- min</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Achievements</div>
+    <div style="text-align: center;">
+      <span class="total-badge" id="totalBadge">0 / 14 unlocked</span>
+    </div>
+    <div class="achievements-grid" id="achievementsGrid"></div>
+  </div>
+
+  <div class="footer-row">
+    <button class="reset-btn" id="resetBtn">Reset stats</button>
+    <button class="close-btn" style="width: auto; margin: 0; padding: 10px 24px;" id="closeBtn">Close</button>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-title">Are you sure?</div>
+      <div class="modal-text">Reset will delete all stats and achievements progress. This cannot be undone.</div>
+      <div class="modal-buttons">
+        <button class="modal-btn cancel" id="modalCancel">Cancel</button>
+        <button class="modal-btn danger" id="modalReset">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const todayCompleted = document.getElementById('todayCompleted');
+    const todayEmergency = document.getElementById('todayEmergency');
+    const todayShown = document.getElementById('todayShown');
+    const todayMinutes = document.getElementById('todayMinutes');
+    const streakDays = document.getElementById('streakDays');
+    const weekChart = document.getElementById('weekChart');
+    const avgInfo = document.getElementById('avgInfo');
+    const achievementsGrid = document.getElementById('achievementsGrid');
+    const totalBadge = document.getElementById('totalBadge');
+    const closeBtn = document.getElementById('closeBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalCancel = document.getElementById('modalCancel');
+    const modalReset = document.getElementById('modalReset');
+
+    function updateUI(data) {
+      todayCompleted.textContent = data.today.completed;
+      todayEmergency.textContent = data.today.emergency;
+      todayShown.textContent = data.today.shown;
+      todayMinutes.textContent = Math.round(data.today.breakMinutes * 10) / 10;
+      streakDays.textContent = data.streak;
+
+      renderWeekChart(data.last7Days);
+
+      if (data.avgMinutesBetween > 0) {
+        avgInfo.textContent = `Reminder interval: ${data.avgMinutesBetween} min`;
+      } else {
+        avgInfo.textContent = 'No completed breaks this week';
+      }
+
+      renderAchievements(data.achievements);
+    }
+
+    function renderWeekChart(last7Days) {
+      const maxCompleted = Math.max(...last7Days.map(d => d.completed), 1);
+      weekChart.innerHTML = '';
+
+      last7Days.forEach(day => {
+        const heightPercent = day.completed > 0 ? (day.completed / maxCompleted) * 100 : 0;
+        const barDiv = document.createElement('div');
+        barDiv.className = 'day-bar';
+        barDiv.innerHTML = `
+          <div class="day-count">${day.completed > 0 ? day.completed : ''}</div>
+          <div class="bar-fill ${day.completed === 0 ? 'empty' : ''}" style="height: ${Math.max(heightPercent, 8)}%"></div>
+          <div class="day-label">${day.dayName}</div>
+        `;
+        weekChart.appendChild(barDiv);
+      });
+    }
+
+    function renderAchievements(achievements) {
+      achievementsGrid.innerHTML = '';
+      let unlockedCount = 0;
+
+      achievements.forEach(a => {
+        if (a.unlocked) unlockedCount++;
+        const div = document.createElement('div');
+        div.className = `achievement ${a.unlocked ? 'unlocked' : 'locked'}`;
+        div.title = a.description;
+        div.innerHTML = `
+          <div class="achievement-icon">${a.icon}</div>
+          <div class="achievement-name">${a.name}</div>
+        `;
+        achievementsGrid.appendChild(div);
+      });
+
+      totalBadge.textContent = `${unlockedCount} / ${achievements.length} unlocked`;
+    }
+
+    window.electronAPI.onStatsLoad((data) => {
+      if (data.theme) {
+        document.documentElement.className = `theme-${data.theme}`;
+      }
+      updateUI(data);
+    });
+
+    window.electronAPI.onStatsReset((data) => {
+      updateUI(data);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      modalOverlay.classList.add('visible');
+    });
+
+    modalCancel.addEventListener('click', () => {
+      modalOverlay.classList.remove('visible');
+    });
+
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) {
+        modalOverlay.classList.remove('visible');
+      }
+    });
+
+    modalReset.addEventListener('click', () => {
+      modalOverlay.classList.remove('visible');
+      window.electronAPI.resetStats();
+    });
+
+    closeBtn.addEventListener('click', () => {
+      window.electronAPI.closeStats();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-warm">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bedtime Warning</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="themes.css">
+  <style>
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(145deg, var(--overlay-bg-1) 0%, var(--overlay-bg-2) 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--overlay-text);
+      user-select: none;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at 50% 30%, var(--overlay-accent-glow) 0%, transparent 50%);
+      pointer-events: none;
+      animation: moonGlow 15s ease-in-out infinite alternate;
+    }
+
+    @keyframes moonGlow {
+      0% { opacity: 0.8; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.05); }
+    }
+
+    .container {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .icon {
+      font-size: 88px;
+      margin-bottom: 28px;
+      animation: gentleFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes gentleFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 52px;
+      font-weight: 400;
+      margin-bottom: 20px;
+      letter-spacing: -0.5px;
+    }
+
+    .time-left {
+      font-size: 28px;
+      font-weight: 300;
+      margin-bottom: 48px;
+      color: var(--overlay-accent);
+      letter-spacing: 0.3px;
+    }
+
+    .countdown {
+      font-size: 20px;
+      font-weight: 300;
+      color: var(--overlay-text-muted);
+    }
+
+    .countdown-number {
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--overlay-accent);
+    }
+
+    .progress-ring {
+      margin: 28px auto;
+    }
+
+    .progress-ring circle {
+      transition: stroke-dashoffset 1s linear;
+      stroke: var(--overlay-accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">&#127769;</div>
+    <h1>Bedtime Soon</h1>
+    <p class="time-left" id="timeLeft">30 minutes until bedtime</p>
+
+    <svg class="progress-ring" width="80" height="80">
+      <circle
+        id="progressCircle"
+        stroke-width="3"
+        fill="transparent"
+        r="36"
+        cx="40"
+        cy="40"
+        stroke-dasharray="226.2"
+        stroke-dashoffset="0"
+        transform="rotate(-90 40 40)"
+      />
+    </svg>
+
+    <p class="countdown">Closing in <span class="countdown-number" id="countdown">5</span> seconds</p>
+  </div>
+
+  <script>
+    const timeLeftEl = document.getElementById('timeLeft');
+    const countdownEl = document.getElementById('countdown');
+    const progressCircle = document.getElementById('progressCircle');
+
+    const circumference = 2 * Math.PI * 36; // 226.2
+    let remaining = 5;
+    let timerInterval = null;
+
+    function updateProgress() {
+      const offset = circumference * (1 - remaining / 5);
+      progressCircle.style.strokeDashoffset = offset;
+    }
+
+    function startCountdown() {
+      updateProgress();
+      timerInterval = setInterval(() => {
+        remaining--;
+        countdownEl.textContent = remaining;
+        updateProgress();
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+          window.electronAPI.closeSleepWarning();
+        }
+      }, 1000);
+    }
+
+    window.electronAPI.onSleepWarningStart((data) => {
+      if (data.theme) {
+        document.documentElement.className = `theme-${data.theme}`;
+      }
+      timeLeftEl.textContent = `${data.minutesLeft} minutes until bedtime`;
+      startCountdown();
+    });
+  </script>
+</body>
+</html>

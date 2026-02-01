@@ -28,6 +28,7 @@
       "main.js",
       "preload.js",
       "*.html",
+      "*.css",
       "tips.json"
     ],
     "extraResources": [

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-warm">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bedtime - Shutdown</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="themes.css">
+  <style>
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(145deg, var(--overlay-bg-1) 0%, var(--overlay-bg-2) 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--overlay-text);
+      user-select: none;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at 50% 40%, var(--overlay-accent-glow) 0%, transparent 45%);
+      pointer-events: none;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 480px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .icon {
+      font-size: 88px;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 48px;
+      font-weight: 400;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-size: 20px;
+      font-weight: 300;
+      color: var(--overlay-text-secondary);
+      margin-bottom: 44px;
+      letter-spacing: 0.2px;
+    }
+
+    .countdown-section {
+      margin-bottom: 44px;
+    }
+
+    .countdown-label {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--overlay-text-muted);
+      margin-bottom: 12px;
+      letter-spacing: 0.3px;
+    }
+
+    .countdown {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 72px;
+      font-weight: 300;
+      font-variant-numeric: tabular-nums;
+      color: var(--overlay-danger);
+      letter-spacing: -2px;
+      text-shadow: 0 0 40px var(--overlay-danger-fill);
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 16px 48px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      border: none;
+      border-radius: 100px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 260px;
+      letter-spacing: 0.2px;
+    }
+
+    .btn-snooze {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--overlay-text);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-snooze:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-snooze:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn-shutdown {
+      background: var(--overlay-danger);
+      color: var(--overlay-text);
+    }
+
+    .btn-shutdown:hover {
+      background: var(--overlay-danger-soft);
+    }
+
+    .snooze-info {
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--overlay-text-muted);
+      margin-top: 6px;
+    }
+
+    .no-snooze-warning {
+      color: var(--overlay-accent);
+      font-size: 15px;
+      font-weight: 400;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">&#128564;</div>
+    <h1>Time for Bed</h1>
+    <p class="subtitle">Your computer will shut down</p>
+
+    <div class="countdown-section">
+      <p class="countdown-label">Shutting down in</p>
+      <div class="countdown" id="countdown">0:30</div>
+    </div>
+
+    <div class="buttons">
+      <button class="btn btn-snooze" id="snoozeBtn">Snooze 5 Minutes</button>
+      <p class="snooze-info" id="snoozeInfo">3 snoozes remaining</p>
+      <button class="btn btn-shutdown" id="shutdownBtn">Shut Down Now</button>
+    </div>
+
+    <p class="no-snooze-warning" id="noSnoozeWarning" style="display: none;">
+      No more snoozes! Shutdown will proceed.
+    </p>
+  </div>
+
+  <script>
+    const countdownEl = document.getElementById('countdown');
+    const snoozeBtn = document.getElementById('snoozeBtn');
+    const snoozeInfo = document.getElementById('snoozeInfo');
+    const shutdownBtn = document.getElementById('shutdownBtn');
+    const noSnoozeWarning = document.getElementById('noSnoozeWarning');
+
+    let remaining = 30; // 30 seconds before shutdown
+    let snoozesLeft = 3;
+    let timerInterval = null;
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function updateDisplay() {
+      countdownEl.textContent = formatTime(remaining);
+    }
+
+    function updateSnoozeUI() {
+      if (snoozesLeft > 0) {
+        snoozeBtn.disabled = false;
+        snoozeInfo.textContent = `${snoozesLeft} ${snoozesLeft === 1 ? 'snooze' : 'snoozes'} remaining`;
+        noSnoozeWarning.style.display = 'none';
+      } else {
+        snoozeBtn.disabled = true;
+        snoozeInfo.style.display = 'none';
+        noSnoozeWarning.style.display = 'block';
+      }
+    }
+
+    function startCountdown() {
+      updateDisplay();
+      updateSnoozeUI();
+
+      timerInterval = setInterval(() => {
+        remaining--;
+        updateDisplay();
+        if (remaining <= 0) {
+          clearInterval(timerInterval);
+          window.electronAPI.executeShutdown();
+        }
+      }, 1000);
+    }
+
+    snoozeBtn.addEventListener('click', () => {
+      if (snoozesLeft > 0) {
+        snoozesLeft--;
+        window.electronAPI.snoozeShutdown(snoozesLeft);
+      }
+    });
+
+    shutdownBtn.addEventListener('click', () => {
+      clearInterval(timerInterval);
+      window.electronAPI.executeShutdown();
+    });
+
+    window.electronAPI.onShutdownPromptStart((data) => {
+      if (data.theme) {
+        document.documentElement.className = `theme-${data.theme}`;
+      }
+      snoozesLeft = data.snoozesLeft;
+      remaining = 30;
+      startCountdown();
+    });
+  </script>
+</body>
+</html>

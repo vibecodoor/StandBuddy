@@ -1,10 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="theme-warm">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Break Time!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="themes.css">
   <style>
+
     * {
       margin: 0;
       padding: 0;
@@ -12,89 +17,129 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(145deg, var(--overlay-bg-1) 0%, var(--overlay-bg-2) 100%);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: white;
+      color: var(--overlay-text);
       user-select: none;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at 30% 20%, var(--overlay-accent-glow) 0%, transparent 50%),
+                  radial-gradient(ellipse at 70% 80%, var(--overlay-accent-glow) 0%, transparent 40%);
+      pointer-events: none;
+      animation: ambientShift 20s ease-in-out infinite alternate;
+    }
+
+    @keyframes ambientShift {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      100% { transform: translate(2%, 2%) rotate(3deg); }
     }
 
     .container {
       text-align: center;
+      position: relative;
+      z-index: 1;
     }
 
     .icon {
-      font-size: 80px;
-      margin-bottom: 20px;
+      font-size: 72px;
+      margin-bottom: 24px;
+      animation: gentleBounce 3s ease-in-out infinite;
+    }
+
+    @keyframes gentleBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
     }
 
     h1 {
-      font-size: 48px;
-      font-weight: 300;
-      margin-bottom: 10px;
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 52px;
+      font-weight: 400;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+      color: var(--overlay-text);
     }
 
     .subtitle {
-      font-size: 24px;
-      opacity: 0.9;
-      margin-bottom: 40px;
+      font-size: 20px;
+      font-weight: 300;
+      color: var(--overlay-text-secondary);
+      margin-bottom: 48px;
+      letter-spacing: 0.3px;
     }
 
     .timer {
-      font-size: 72px;
-      font-weight: 200;
-      margin-bottom: 40px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 80px;
+      font-weight: 300;
+      margin-bottom: 32px;
       font-variant-numeric: tabular-nums;
+      color: var(--overlay-accent);
+      text-shadow: 0 0 60px var(--overlay-accent-glow);
+      letter-spacing: -2px;
     }
 
     .progress-container {
-      width: 300px;
-      height: 6px;
-      background: rgba(255, 255, 255, 0.3);
-      border-radius: 3px;
+      width: 320px;
+      height: 4px;
+      background: rgba(250, 246, 240, 0.1);
+      border-radius: 2px;
       overflow: hidden;
-      margin-bottom: 40px;
+      margin: 0 auto 48px auto;
     }
 
     .progress-bar {
       height: 100%;
-      background: white;
-      border-radius: 3px;
+      background: linear-gradient(90deg, var(--overlay-accent-dim) 0%, var(--overlay-accent) 100%);
+      border-radius: 2px;
       transition: width 1s linear;
+      box-shadow: 0 0 12px var(--overlay-accent-glow);
     }
 
     .emergency-section {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .emergency-btn {
-      padding: 12px 30px;
+      padding: 14px 32px;
+      font-family: 'DM Sans', sans-serif;
       font-size: 14px;
+      font-weight: 400;
       background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      color: rgba(255, 255, 255, 0.5);
-      border-radius: 30px;
+      border: 1px solid var(--overlay-text-muted);
+      color: var(--overlay-text-muted);
+      border-radius: 100px;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.25s ease;
       position: relative;
       overflow: hidden;
+      letter-spacing: 0.3px;
     }
 
     .emergency-btn:hover {
-      border-color: rgba(255, 255, 255, 0.5);
-      color: rgba(255, 255, 255, 0.7);
+      border-color: var(--overlay-text-secondary);
+      color: var(--overlay-text-secondary);
     }
 
     .emergency-btn.holding {
-      border-color: rgba(255, 150, 150, 0.6);
-      color: rgba(255, 255, 255, 0.9);
+      border-color: var(--overlay-danger-soft);
+      color: var(--overlay-text);
     }
 
     .emergency-btn .hold-progress {
@@ -103,9 +148,9 @@
       top: 0;
       height: 100%;
       width: 0%;
-      background: rgba(255, 100, 100, 0.4);
+      background: var(--overlay-danger-fill);
       transition: width 0.05s linear;
-      border-radius: 30px;
+      border-radius: 100px;
     }
 
     .emergency-btn span {
@@ -115,43 +160,52 @@
 
     .emergency-hint {
       font-size: 13px;
-      color: rgba(255, 255, 255, 0.5);
+      font-weight: 300;
+      color: var(--overlay-text-muted);
       min-height: 20px;
+      transition: color 0.2s ease;
     }
 
     .emergency-hint.holding {
-      color: rgba(255, 200, 200, 0.8);
+      color: var(--overlay-danger-soft);
     }
 
     .tip-block {
-      margin-top: 30px;
-      max-width: 500px;
-      padding: 20px 30px;
-      background: rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      backdrop-filter: blur(10px);
+      margin-top: 40px;
+      max-width: 480px;
+      padding: 24px 32px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      backdrop-filter: blur(20px);
     }
 
     .tip-label {
-      font-size: 12px;
+      font-size: 11px;
+      font-weight: 500;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      opacity: 0.7;
-      margin-bottom: 8px;
+      letter-spacing: 1.5px;
+      color: var(--overlay-text-muted);
+      margin-bottom: 12px;
     }
 
     .tip-category {
       display: inline-block;
-      background: rgba(255, 255, 255, 0.2);
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      margin-left: 8px;
+      background: var(--overlay-accent-glow);
+      color: var(--overlay-accent);
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 500;
+      margin-left: 10px;
+      letter-spacing: 0.5px;
     }
 
     .tip-text {
-      font-size: 18px;
-      line-height: 1.5;
+      font-size: 17px;
+      font-weight: 300;
+      line-height: 1.6;
+      color: var(--overlay-text-secondary);
     }
   </style>
 </head>
@@ -195,6 +249,7 @@
 
     let holdStartTime = null;
     let holdInterval = null;
+    let holdButton = null;
     const HOLD_DURATION = 5000;
 
     function formatTime(seconds) {
@@ -220,7 +275,11 @@
       }, 1000);
     }
 
-    function startHold() {
+    function startHold(button) {
+      if (holdButton !== null) {
+        return;
+      }
+      holdButton = button;
       holdStartTime = Date.now();
       emergencyBtn.classList.add('holding');
       emergencyHint.classList.add('holding');
@@ -244,12 +303,16 @@
       }, 50);
     }
 
-    function cancelHold() {
+    function cancelHold(button) {
+      if (button !== undefined && button !== holdButton) {
+        return;
+      }
       if (holdInterval) {
         clearInterval(holdInterval);
         holdInterval = null;
       }
       holdStartTime = null;
+      holdButton = null;
       holdProgress.style.width = '0%';
       emergencyBtn.classList.remove('holding');
       emergencyHint.classList.remove('holding');
@@ -263,30 +326,35 @@
       window.electronAPI.skipBreak();
     }
 
-    emergencyBtn.addEventListener('mousedown', startHold);
-    emergencyBtn.addEventListener('mouseup', cancelHold);
-    emergencyBtn.addEventListener('mouseleave', cancelHold);
+    emergencyBtn.addEventListener('mousedown', (e) => startHold(e.button));
+    emergencyBtn.addEventListener('mouseup', (e) => cancelHold(e.button));
+    emergencyBtn.addEventListener('mouseleave', () => cancelHold());
+    emergencyBtn.addEventListener('contextmenu', (e) => e.preventDefault());
     emergencyBtn.addEventListener('touchstart', (e) => {
       e.preventDefault();
-      startHold();
+      startHold('touch');
     });
-    emergencyBtn.addEventListener('touchend', cancelHold);
-    emergencyBtn.addEventListener('touchcancel', cancelHold);
+    emergencyBtn.addEventListener('touchend', () => cancelHold('touch'));
+    emergencyBtn.addEventListener('touchcancel', () => cancelHold('touch'));
 
     window.electronAPI.onBreakStart((data) => {
+      if (data.theme) {
+        document.documentElement.className = `theme-${data.theme}`;
+      }
       totalDuration = data.duration;
       remaining = data.duration;
       startCountdown();
 
-      if (data.tip) {
-        tipText.textContent = data.tip.text;
-        if (data.tip.category) {
-          tipCategory.textContent = data.tip.category;
-        } else {
-          tipCategory.style.display = 'none';
-        }
-      } else {
+      if (!data.tip) {
         tipBlock.style.display = 'none';
+        return;
+      }
+
+      tipText.textContent = data.tip.text;
+      if (data.tip.category) {
+        tipCategory.textContent = data.tip.category;
+      } else {
+        tipCategory.style.display = 'none';
       }
     });
   </script>

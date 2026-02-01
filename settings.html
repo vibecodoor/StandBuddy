@@ -1,10 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="theme-warm">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StandBuddy Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="themes.css">
   <style>
+    :root {
+      --radius-sm: 8px;
+      --radius-md: 10px;
+      --radius-full: 100px;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -12,79 +22,94 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f5f5f5;
-      padding: 24px;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-base);
+      padding: 28px 24px;
       user-select: none;
+      color: var(--text-primary);
+      line-height: 1.5;
     }
 
     h1 {
-      font-size: 18px;
-      color: #333;
-      margin-bottom: 24px;
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 28px;
       text-align: center;
+      letter-spacing: -0.2px;
     }
 
     .setting-group {
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
 
     label {
       display: block;
-      font-size: 14px;
-      color: #555;
-      margin-bottom: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      letter-spacing: 0.1px;
     }
 
     .presets {
       display: flex;
       gap: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
 
     .preset-btn {
-      padding: 8px 14px;
+      padding: 9px 14px;
+      font-family: 'DM Sans', sans-serif;
       font-size: 13px;
-      border: 1px solid #ddd;
-      border-radius: 20px;
-      background: white;
-      color: #555;
+      font-weight: 400;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-full);
+      background: var(--bg-card);
+      color: var(--text-secondary);
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.15s ease;
+      box-shadow: var(--shadow-sm);
     }
 
     .preset-btn:hover {
-      border-color: #4a90d9;
-      color: #4a90d9;
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
     }
 
     .preset-btn.active {
-      background: #4a90d9;
-      border-color: #4a90d9;
-      color: white;
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--text-on-accent);
+      box-shadow: var(--shadow-md);
     }
 
     .input-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .input-row span {
-      color: #888;
+      color: var(--text-muted);
       font-size: 13px;
     }
 
     input[type="number"] {
       width: 80px;
-      padding: 8px 10px;
+      padding: 10px 12px;
+      font-family: 'DM Sans', sans-serif;
       font-size: 14px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      background: white;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      background: var(--bg-input);
+      color: var(--text-primary);
       text-align: center;
       -moz-appearance: textfield;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: var(--shadow-sm);
     }
 
     input[type="number"]::-webkit-outer-spin-button,
@@ -95,70 +120,170 @@
 
     input[type="number"]:focus {
       outline: none;
-      border-color: #4a90d9;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
     input[type="number"].error {
-      border-color: #e74c3c;
+      border-color: var(--danger);
     }
 
     .checkbox-group {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       margin-top: 24px;
-      padding-top: 20px;
-      border-top: 1px solid #e0e0e0;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-subtle);
     }
 
     .checkbox-group input[type="checkbox"] {
       width: 18px;
       height: 18px;
       cursor: pointer;
+      accent-color: var(--accent);
     }
 
     .checkbox-group label {
       margin: 0;
       cursor: pointer;
+      font-weight: 400;
+      color: var(--text-primary);
     }
 
     .buttons {
       display: flex;
-      gap: 10px;
-      margin-top: 28px;
+      gap: 12px;
+      margin-top: 32px;
     }
 
     button.action {
       flex: 1;
-      padding: 12px;
+      padding: 13px 16px;
+      font-family: 'DM Sans', sans-serif;
       font-size: 14px;
+      font-weight: 500;
       border: none;
-      border-radius: 6px;
+      border-radius: var(--radius-md);
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.15s ease;
+      letter-spacing: 0.1px;
     }
 
     .btn-cancel {
-      background: #e0e0e0;
-      color: #333;
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-sm);
     }
 
     .btn-cancel:hover {
-      background: #d0d0d0;
+      background: var(--bg-base);
+      border-color: rgba(0, 0, 0, 0.12);
     }
 
     .btn-save {
-      background: #4a90d9;
-      color: white;
+      background: var(--accent);
+      color: var(--text-on-accent);
+      box-shadow: var(--shadow-md);
     }
 
     .btn-save:hover {
-      background: #3a7fc8;
+      background: var(--accent-hover);
+    }
+
+    .sleep-mode-section {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .sleep-mode-settings {
+      margin-top: 16px;
+      padding-left: 30px;
+      display: none;
+    }
+
+    .sleep-mode-settings.visible {
+      display: block;
+    }
+
+    .sleep-mode-settings label {
+      margin-bottom: 10px;
+    }
+
+    input[type="time"] {
+      padding: 10px 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      background: var(--bg-input);
+      color: var(--text-primary);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: var(--shadow-sm);
+    }
+
+    input[type="time"]:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    /* Theme picker */
+    .theme-picker {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .theme-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .theme-btn:hover {
+      transform: scale(1.1);
+    }
+
+    .theme-btn.active {
+      border-color: var(--text-primary);
+      box-shadow: 0 0 0 2px var(--bg-base);
+    }
+
+    .theme-btn[data-theme="warm"] { background: linear-gradient(135deg, #c9a86c 50%, #1a1612 50%); }
+    .theme-btn[data-theme="ocean"] { background: linear-gradient(135deg, #5b9bd5 50%, #0d1520 50%); }
+    .theme-btn[data-theme="forest"] { background: linear-gradient(135deg, #6b9b6b 50%, #0d150d 50%); }
+    .theme-btn[data-theme="lavender"] { background: linear-gradient(135deg, #9b7bb8 50%, #150d18 50%); }
+    .theme-btn[data-theme="slate"] { background: linear-gradient(135deg, #6b7b8b 50%, #12151a 50%); }
+    .theme-btn[data-theme="rose"] { background: linear-gradient(135deg, #c98b9b 50%, #180d10 50%); }
+
+    .sleep-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: 10px;
     }
   </style>
 </head>
 <body>
   <h1>StandBuddy Settings</h1>
+
+  <div class="setting-group">
+    <label>Theme</label>
+    <div class="theme-picker" id="themePicker">
+      <button class="theme-btn" data-theme="warm" title="Warm"></button>
+      <button class="theme-btn" data-theme="ocean" title="Ocean"></button>
+      <button class="theme-btn" data-theme="forest" title="Forest"></button>
+      <button class="theme-btn" data-theme="lavender" title="Lavender"></button>
+      <button class="theme-btn" data-theme="slate" title="Slate"></button>
+      <button class="theme-btn" data-theme="rose" title="Rose"></button>
+    </div>
+  </div>
 
   <div class="setting-group">
     <label>Reminder Interval</label>
@@ -192,6 +317,20 @@
     </div>
   </div>
 
+  <div class="sleep-mode-section">
+    <div class="checkbox-group" style="border-top: none; margin-top: 0; padding-top: 0;">
+      <input type="checkbox" id="sleepModeEnabled">
+      <label for="sleepModeEnabled">Sleep Mode</label>
+    </div>
+    <div class="sleep-mode-settings" id="sleepModeSettings">
+      <label>Bedtime</label>
+      <div class="input-row">
+        <input type="time" id="sleepModeBedtime" value="22:00">
+        <span class="sleep-hint">Computer will shut down at this time</span>
+      </div>
+    </div>
+  </div>
+
   <div class="checkbox-group">
     <input type="checkbox" id="launchAtLogin">
     <label for="launchAtLogin">Launch at startup</label>
@@ -210,8 +349,32 @@
     const breakPresets = document.getElementById('breakPresets');
 
     const launchAtLoginCheckbox = document.getElementById('launchAtLogin');
+    const sleepModeCheckbox = document.getElementById('sleepModeEnabled');
+    const sleepModeSettings = document.getElementById('sleepModeSettings');
+    const sleepModeBedtime = document.getElementById('sleepModeBedtime');
+    const themePicker = document.getElementById('themePicker');
     const saveBtn = document.getElementById('saveBtn');
     const cancelBtn = document.getElementById('cancelBtn');
+
+    let currentTheme = 'warm';
+
+    function applyTheme(theme) {
+      document.documentElement.className = `theme-${theme}`;
+      currentTheme = theme;
+      themePicker.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.theme === theme);
+      });
+    }
+
+    themePicker.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        applyTheme(btn.dataset.theme);
+      });
+    });
+
+    sleepModeCheckbox.addEventListener('change', () => {
+      sleepModeSettings.classList.toggle('visible', sleepModeCheckbox.checked);
+    });
 
     function updatePresetButtons(container, input) {
       const value = parseInt(input.value, 10);
@@ -246,30 +409,26 @@
 
     function validateInterval() {
       const val = parseInt(intervalInput.value, 10);
-      if (isNaN(val) || val < 1) {
-        intervalInput.classList.add('error');
-        return false;
-      } else {
-        intervalInput.classList.remove('error');
-        return true;
-      }
+      const isValid = !isNaN(val) && val >= 1;
+      intervalInput.classList.toggle('error', !isValid);
+      return isValid;
     }
 
     function validateBreak() {
       const val = parseInt(breakInput.value, 10);
-      if (isNaN(val) || val < 10) {
-        breakInput.classList.add('error');
-        return false;
-      } else {
-        breakInput.classList.remove('error');
-        return true;
-      }
+      const isValid = !isNaN(val) && val >= 10;
+      breakInput.classList.toggle('error', !isValid);
+      return isValid;
     }
 
     window.electronAPI.onSettingsLoad((settings) => {
       intervalInput.value = settings.interval;
       breakInput.value = settings.breakDuration;
       launchAtLoginCheckbox.checked = settings.launchAtLogin || false;
+      sleepModeCheckbox.checked = settings.sleepModeEnabled || false;
+      sleepModeBedtime.value = settings.sleepModeBedtime || '22:00';
+      sleepModeSettings.classList.toggle('visible', sleepModeCheckbox.checked);
+      applyTheme(settings.theme || 'warm');
       updatePresetButtons(intervalPresets, intervalInput);
       updatePresetButtons(breakPresets, breakInput);
     });
@@ -287,13 +446,13 @@
         return;
       }
 
-      let interval = Math.max(1, parseInt(intervalInput.value, 10));
-      let breakDuration = Math.max(10, parseInt(breakInput.value, 10));
-
       window.electronAPI.saveSettings({
-        interval: interval,
-        breakDuration: breakDuration,
-        launchAtLogin: launchAtLoginCheckbox.checked
+        interval: Math.max(1, parseInt(intervalInput.value, 10)),
+        breakDuration: Math.max(10, parseInt(breakInput.value, 10)),
+        launchAtLogin: launchAtLoginCheckbox.checked,
+        sleepModeEnabled: sleepModeCheckbox.checked,
+        sleepModeBedtime: sleepModeBedtime.value,
+        theme: currentTheme
       });
     });
 

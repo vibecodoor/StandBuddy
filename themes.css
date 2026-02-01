@@ -1,0 +1,240 @@
+/* StandBuddy Theme System
+   Each theme provides colors for both light windows (settings, stats)
+   and dark overlays (break, sleep-warning, shutdown-prompt).
+
+   Usage: Add class to <html> element, e.g. <html class="theme-warm">
+*/
+
+/* ========================================
+   THEME: Warm (Default - Golden Amber)
+   ======================================== */
+.theme-warm {
+  /* Light mode (settings, stats) */
+  --bg-base: #faf8f5;
+  --bg-card: #ffffff;
+  --bg-stat: #faf8f5;
+  --bg-input: #ffffff;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-focus: #c9a86c;
+  --accent: #c9a86c;
+  --accent-hover: #b8955b;
+  --accent-soft: rgba(201, 168, 108, 0.12);
+  --accent-glow: rgba(201, 168, 108, 0.25);
+  --text-primary: #1a1612;
+  --text-secondary: #5c5550;
+  --text-muted: #9c958e;
+  --text-on-accent: #ffffff;
+  --danger: #c75f4a;
+  --danger-soft: rgba(199, 95, 74, 0.08);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+
+  /* Dark mode (overlays) */
+  --overlay-bg-1: #1a1612;
+  --overlay-bg-2: #2d2319;
+  --overlay-accent: #e8b866;
+  --overlay-accent-dim: rgba(232, 184, 102, 0.6);
+  --overlay-accent-glow: rgba(232, 184, 102, 0.15);
+  --overlay-text: #faf6f0;
+  --overlay-text-secondary: rgba(250, 246, 240, 0.7);
+  --overlay-text-muted: rgba(250, 246, 240, 0.45);
+  --overlay-danger: #e88266;
+  --overlay-danger-soft: rgba(232, 130, 102, 0.5);
+  --overlay-danger-fill: rgba(232, 130, 102, 0.25);
+}
+
+/* ========================================
+   THEME: Ocean (Calm Blue)
+   ======================================== */
+.theme-ocean {
+  /* Light mode */
+  --bg-base: #f5f8fa;
+  --bg-card: #ffffff;
+  --bg-stat: #f5f8fa;
+  --bg-input: #ffffff;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-focus: #5b9bd5;
+  --accent: #5b9bd5;
+  --accent-hover: #4a8ac4;
+  --accent-soft: rgba(91, 155, 213, 0.12);
+  --accent-glow: rgba(91, 155, 213, 0.25);
+  --text-primary: #1a2632;
+  --text-secondary: #4a5c6a;
+  --text-muted: #8a9aa8;
+  --text-on-accent: #ffffff;
+  --danger: #c75f5f;
+  --danger-soft: rgba(199, 95, 95, 0.08);
+  --shadow-sm: 0 1px 3px rgba(0, 40, 80, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 40, 80, 0.06);
+  --shadow-card: 0 2px 8px rgba(0, 40, 80, 0.04), 0 1px 2px rgba(0, 40, 80, 0.02);
+
+  /* Dark mode (overlays) */
+  --overlay-bg-1: #0d1520;
+  --overlay-bg-2: #152535;
+  --overlay-accent: #6bb3e8;
+  --overlay-accent-dim: rgba(107, 179, 232, 0.6);
+  --overlay-accent-glow: rgba(107, 179, 232, 0.15);
+  --overlay-text: #e8f2fa;
+  --overlay-text-secondary: rgba(232, 242, 250, 0.7);
+  --overlay-text-muted: rgba(232, 242, 250, 0.45);
+  --overlay-danger: #e87a7a;
+  --overlay-danger-soft: rgba(232, 122, 122, 0.5);
+  --overlay-danger-fill: rgba(232, 122, 122, 0.25);
+}
+
+/* ========================================
+   THEME: Forest (Sage Green)
+   ======================================== */
+.theme-forest {
+  /* Light mode */
+  --bg-base: #f5f8f5;
+  --bg-card: #ffffff;
+  --bg-stat: #f5f8f5;
+  --bg-input: #ffffff;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-focus: #6b9b6b;
+  --accent: #6b9b6b;
+  --accent-hover: #5a8a5a;
+  --accent-soft: rgba(107, 155, 107, 0.12);
+  --accent-glow: rgba(107, 155, 107, 0.25);
+  --text-primary: #1a261a;
+  --text-secondary: #4a5c4a;
+  --text-muted: #8a9a8a;
+  --text-on-accent: #ffffff;
+  --danger: #c7755f;
+  --danger-soft: rgba(199, 117, 95, 0.08);
+  --shadow-sm: 0 1px 3px rgba(0, 40, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 40, 0, 0.06);
+  --shadow-card: 0 2px 8px rgba(0, 40, 0, 0.04), 0 1px 2px rgba(0, 40, 0, 0.02);
+
+  /* Dark mode (overlays) */
+  --overlay-bg-1: #0d150d;
+  --overlay-bg-2: #152515;
+  --overlay-accent: #8bc98b;
+  --overlay-accent-dim: rgba(139, 201, 139, 0.6);
+  --overlay-accent-glow: rgba(139, 201, 139, 0.15);
+  --overlay-text: #e8f2e8;
+  --overlay-text-secondary: rgba(232, 242, 232, 0.7);
+  --overlay-text-muted: rgba(232, 242, 232, 0.45);
+  --overlay-danger: #e8a07a;
+  --overlay-danger-soft: rgba(232, 160, 122, 0.5);
+  --overlay-danger-fill: rgba(232, 160, 122, 0.25);
+}
+
+/* ========================================
+   THEME: Lavender (Soft Purple)
+   ======================================== */
+.theme-lavender {
+  /* Light mode */
+  --bg-base: #f8f5fa;
+  --bg-card: #ffffff;
+  --bg-stat: #f8f5fa;
+  --bg-input: #ffffff;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-focus: #9b7bb8;
+  --accent: #9b7bb8;
+  --accent-hover: #8a6aa7;
+  --accent-soft: rgba(155, 123, 184, 0.12);
+  --accent-glow: rgba(155, 123, 184, 0.25);
+  --text-primary: #201a26;
+  --text-secondary: #5c4a6a;
+  --text-muted: #9a8aa8;
+  --text-on-accent: #ffffff;
+  --danger: #c75f7a;
+  --danger-soft: rgba(199, 95, 122, 0.08);
+  --shadow-sm: 0 1px 3px rgba(40, 0, 60, 0.04);
+  --shadow-md: 0 2px 8px rgba(40, 0, 60, 0.06);
+  --shadow-card: 0 2px 8px rgba(40, 0, 60, 0.04), 0 1px 2px rgba(40, 0, 60, 0.02);
+
+  /* Dark mode (overlays) */
+  --overlay-bg-1: #150d18;
+  --overlay-bg-2: #251528;
+  --overlay-accent: #c9a0e8;
+  --overlay-accent-dim: rgba(201, 160, 232, 0.6);
+  --overlay-accent-glow: rgba(201, 160, 232, 0.15);
+  --overlay-text: #f2e8f8;
+  --overlay-text-secondary: rgba(242, 232, 248, 0.7);
+  --overlay-text-muted: rgba(242, 232, 248, 0.45);
+  --overlay-danger: #e87a9a;
+  --overlay-danger-soft: rgba(232, 122, 154, 0.5);
+  --overlay-danger-fill: rgba(232, 122, 154, 0.25);
+}
+
+/* ========================================
+   THEME: Slate (Cool Gray)
+   ======================================== */
+.theme-slate {
+  /* Light mode */
+  --bg-base: #f5f6f7;
+  --bg-card: #ffffff;
+  --bg-stat: #f5f6f7;
+  --bg-input: #ffffff;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-focus: #6b7b8b;
+  --accent: #6b7b8b;
+  --accent-hover: #5a6a7a;
+  --accent-soft: rgba(107, 123, 139, 0.12);
+  --accent-glow: rgba(107, 123, 139, 0.25);
+  --text-primary: #1a1e22;
+  --text-secondary: #4a5560;
+  --text-muted: #8a9198;
+  --text-on-accent: #ffffff;
+  --danger: #c75f5f;
+  --danger-soft: rgba(199, 95, 95, 0.08);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 20, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 20, 0.06);
+  --shadow-card: 0 2px 8px rgba(0, 0, 20, 0.04), 0 1px 2px rgba(0, 0, 20, 0.02);
+
+  /* Dark mode (overlays) */
+  --overlay-bg-1: #12151a;
+  --overlay-bg-2: #1e2228;
+  --overlay-accent: #a0b0c0;
+  --overlay-accent-dim: rgba(160, 176, 192, 0.6);
+  --overlay-accent-glow: rgba(160, 176, 192, 0.15);
+  --overlay-text: #e8eaee;
+  --overlay-text-secondary: rgba(232, 234, 238, 0.7);
+  --overlay-text-muted: rgba(232, 234, 238, 0.45);
+  --overlay-danger: #e88080;
+  --overlay-danger-soft: rgba(232, 128, 128, 0.5);
+  --overlay-danger-fill: rgba(232, 128, 128, 0.25);
+}
+
+/* ========================================
+   THEME: Rose (Dusty Pink)
+   ======================================== */
+.theme-rose {
+  /* Light mode */
+  --bg-base: #faf5f6;
+  --bg-card: #ffffff;
+  --bg-stat: #faf5f6;
+  --bg-input: #ffffff;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-focus: #c98b9b;
+  --accent: #c98b9b;
+  --accent-hover: #b87a8a;
+  --accent-soft: rgba(201, 139, 155, 0.12);
+  --accent-glow: rgba(201, 139, 155, 0.25);
+  --text-primary: #261a1e;
+  --text-secondary: #6a4a55;
+  --text-muted: #a88a92;
+  --text-on-accent: #ffffff;
+  --danger: #c75f5f;
+  --danger-soft: rgba(199, 95, 95, 0.08);
+  --shadow-sm: 0 1px 3px rgba(60, 0, 20, 0.04);
+  --shadow-md: 0 2px 8px rgba(60, 0, 20, 0.06);
+  --shadow-card: 0 2px 8px rgba(60, 0, 20, 0.04), 0 1px 2px rgba(60, 0, 20, 0.02);
+
+  /* Dark mode (overlays) */
+  --overlay-bg-1: #180d10;
+  --overlay-bg-2: #281518;
+  --overlay-accent: #e8a8b8;
+  --overlay-accent-dim: rgba(232, 168, 184, 0.6);
+  --overlay-accent-glow: rgba(232, 168, 184, 0.15);
+  --overlay-text: #f8e8ec;
+  --overlay-text-secondary: rgba(248, 232, 236, 0.7);
+  --overlay-text-muted: rgba(248, 232, 236, 0.45);
+  --overlay-danger: #e87a7a;
+  --overlay-danger-soft: rgba(232, 122, 122, 0.5);
+  --overlay-danger-fill: rgba(232, 122, 122, 0.25);
+}
