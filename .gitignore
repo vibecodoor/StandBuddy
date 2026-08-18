@@ -24,3 +24,8 @@ nul
 
 # Build scratch
 asar_out/
+
+# Dev memory / agent instructions (local only)
+devkit/
+CLAUDE.md
+AGENTS.md
