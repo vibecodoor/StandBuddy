@@ -13,6 +13,9 @@ Verified live: break overlay renders fully populated in the correct theme ~1s af
 
 ## Next
 
+0. Publish the GitHub Release for tag `v1.0.5` manually (browser) and attach
+   `dist/StandBuddy-1.0.5-win.zip`. Code + tag are pushed; only the binary is unpublished.
+   GitHub CLI is not installed on this machine — that is why it was not automated.
 1. Bundle the DM Sans / DM Serif woff2 files locally and drop the `fonts.googleapis.com` link.
    Every overlay still pings Google with the user's IP, which contradicts the offline invariant.
 2. Game Limiter AC #1–#6 in [specs/game-limiter.md](specs/game-limiter.md) are still unverified —
