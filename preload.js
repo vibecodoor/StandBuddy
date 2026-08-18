@@ -15,5 +15,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeSleepWarning: () => ipcRenderer.send('sleep-warning-close'),
   onShutdownPromptStart: (callback) => ipcRenderer.on('shutdown-prompt-start', (event, data) => callback(data)),
   snoozeShutdown: (snoozesLeft) => ipcRenderer.send('shutdown-snooze', snoozesLeft),
-  executeShutdown: () => ipcRenderer.send('shutdown-execute')
+  executeShutdown: () => ipcRenderer.send('shutdown-execute'),
+  // Game limiter
+  onGameWarningStart: (callback) => ipcRenderer.on('game-warning-start', (event, data) => callback(data)),
+  onGameBlockedStart: (callback) => ipcRenderer.on('game-blocked-start', (event, data) => callback(data)),
+  pickGameExe: () => ipcRenderer.invoke('game-pick-exe'),
+  scanSteamGames: () => ipcRenderer.invoke('steam-list-games')
 });

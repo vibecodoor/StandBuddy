@@ -1,7 +1,9 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage, dialog, powerMonitor } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { exec } = require('child_process');
+const { exec, execFile } = require('child_process');
+const gameMonitor = require('./game-monitor');
+const steamScan = require('./steam-scan');
 
 let tray = null;
 let settingsWindow = null;
@@ -22,6 +24,18 @@ let shutdownPromptWindow = null;
 let sleepModeTimers = [];
 let snoozesRemaining = 3;
 
+// Game limiter variables
+let gameSessionStart = null;
+let currentGameProcess = null;
+let gameTimers = [];
+let gameLimitReachedToday = false;
+let gameLimitDayKey = '';
+let gameWarningWindow = null;
+let gameWarningCloseTimer = null;
+let gameBlockedWindow = null;
+let gameBlockedCloseTimer = null;
+let gameAutoPaused = false; // reminders auto-paused because a pause-flagged game is running
+
 const defaultSettings = {
   interval: 30,
   breakDuration: 60,
@@ -32,11 +46,46 @@ const defaultSettings = {
   activeDays: [],
   sleepModeEnabled: false,
   sleepModeBedtime: '22:00',
-  theme: 'warm'
+  theme: 'warm',
+  gameLimiterEnabled: false,
+  gameLimitHours: 4,
+  gameList: [],
+  gameNames: {}, // exe (lowercase) -> friendly display name; display only
+  gamePauseList: [] // exes (lowercase) that pause break reminders while running
 };
 
 let settings = { ...defaultSettings };
 let tips = [];
+
+// Window background the OS paints before the renderer's first frame. Without it
+// Electron uses its default white, which flashes for a frame on every overlay.
+// Values mirror --overlay-bg-1 / --bg-base in themes.css.
+const THEME_BG = {
+  warm:     { overlay: '#1a1612', light: '#faf8f5' },
+  ocean:    { overlay: '#0d1520', light: '#f5f8fa' },
+  forest:   { overlay: '#0d150d', light: '#f5f8f5' },
+  lavender: { overlay: '#150d18', light: '#f8f5fa' },
+  slate:    { overlay: '#12151a', light: '#f5f6f7' },
+  rose:     { overlay: '#180d10', light: '#faf5f6' }
+};
+
+function themeBg(kind) {
+  return (THEME_BG[settings.theme] || THEME_BG.warm)[kind];
+}
+
+// Windows are created hidden and revealed only once they have actually painted,
+// so no unpainted (white) frame ever reaches the screen. The timeout is a safety
+// net: an overlay that never appears is worse than one that flashes.
+function revealWhenPainted(win, reveal = (w) => w.show()) {
+  let done = false;
+  const showOnce = () => {
+    if (done || !win || win.isDestroyed()) return;
+    done = true;
+    reveal(win);
+  };
+  win.once('ready-to-show', showOnce);
+  setTimeout(showOnce, 1500);
+}
 
 function getTodayDateString() {
   const now = new Date();
@@ -85,6 +134,20 @@ function ensureTodayStats() {
   }
 }
 
+function ensureGameDay() {
+  // Reset the "limit reached" flag when the calendar day changes.
+  const today = getTodayDateString();
+  if (gameLimitDayKey !== today) {
+    gameLimitDayKey = today;
+    gameLimitReachedToday = false;
+  }
+}
+
+function getTodayGameMinutes() {
+  const today = getTodayDateString();
+  return stats.days[today]?.gameMinutes ?? 0;
+}
+
 function recordCompletedBreak() {
   ensureTodayStats();
   settings.todayBreaks++;
@@ -107,7 +170,7 @@ function getCountdownText() {
     return 'On break';
   }
   if (isPaused || !nextBreakTime) {
-    return 'Paused';
+    return gameAutoPaused ? 'Paused (gaming)' : 'Paused';
   }
   const remaining = nextBreakTime - Date.now();
   return remaining > 0 ? formatCountdown(remaining) : '0:00';
@@ -121,7 +184,19 @@ function updateTrayTooltip() {
   const streakDays = calculateStreak();
   const todayBreaks = settings.todayBreaks;
 
-  const tooltip = `StandBuddy\r\nNext break in: ${countdown}\r\nToday: ${todayBreaks} ${pluralize('break', todayBreaks)}\r\nActive streak: ${streakDays} ${pluralize('day', streakDays)}`;
+  let tooltip = `StandBuddy\r\nNext break in: ${countdown}\r\nToday: ${todayBreaks} ${pluralize('break', todayBreaks)}\r\nActive streak: ${streakDays} ${pluralize('day', streakDays)}`;
+
+  if (settings.gameLimiterEnabled) {
+    const used = liveGameMinutes();
+    const limitMin = (settings.gameLimitHours || 4) * 60;
+    const fmt = (m) => {
+      const h = Math.floor(m / 60);
+      const min = Math.floor(m % 60);
+      return h > 0 ? `${h}h ${min}m` : `${min}m`;
+    };
+    tooltip += `\r\nGame time today: ${fmt(used)} / ${settings.gameLimitHours || 4}h`;
+  }
+
   tray.setToolTip(tooltip);
 }
 
@@ -218,8 +293,12 @@ function ensureTodayDayStats() {
       completed: 0,
       emergency: 0,
       shown: 0,
-      breakMinutes: 0
+      breakMinutes: 0,
+      gameMinutes: 0
     };
+  }
+  if (stats.days[today].gameMinutes === undefined) {
+    stats.days[today].gameMinutes = 0;
   }
   return stats.days[today];
 }
@@ -376,6 +455,8 @@ function buildContextMenu() {
     {
       label: isPaused ? 'Resume' : 'Pause',
       click: () => {
+        // A manual pause/resume takes over from any game auto-pause.
+        gameAutoPaused = false;
         if (isPaused) {
           resumeTimer();
         } else {
@@ -455,6 +536,8 @@ function showBreakWindow() {
     fullscreen: true,
     simpleFullscreen: true,
     kiosk: true,
+    show: false,
+    backgroundColor: themeBg('overlay'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -468,13 +551,20 @@ function showBreakWindow() {
   const currentTip = getNextTip();
 
   breakWindow.loadFile('break.html');
-  breakWindow.webContents.on('did-finish-load', () => {
+  // dom-ready, not did-finish-load: the payload (theme, tip, duration) must land
+  // before the first paint, and did-finish-load also waits on the web fonts.
+  breakWindow.webContents.on('dom-ready', () => {
+    if (!breakWindow) return;
     breakWindow.webContents.send('break-start', {
       duration: settings.breakDuration,
       tip: currentTip,
       theme: settings.theme
     });
-    breakWindow.focus();
+  });
+
+  revealWhenPainted(breakWindow, (win) => {
+    win.show();
+    win.focus();
     recordBreakShown();
   });
 
@@ -531,10 +621,12 @@ function openSettingsWindow() {
 
   settingsWindow = new BrowserWindow({
     width: 380,
-    height: 580,
+    height: 760,
     resizable: false,
     minimizable: false,
     maximizable: false,
+    show: false,
+    backgroundColor: themeBg('light'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -545,9 +637,12 @@ function openSettingsWindow() {
   settingsWindow.setMenu(null);
   settingsWindow.loadFile('settings.html');
 
-  settingsWindow.webContents.on('did-finish-load', () => {
+  settingsWindow.webContents.on('dom-ready', () => {
+    if (!settingsWindow) return;
     settingsWindow.webContents.send('settings-load', settings);
   });
+
+  revealWhenPainted(settingsWindow);
 
   settingsWindow.on('closed', () => {
     settingsWindow = null;
@@ -566,6 +661,8 @@ function openStatsWindow() {
     resizable: false,
     minimizable: false,
     maximizable: false,
+    show: false,
+    backgroundColor: themeBg('light'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -576,11 +673,14 @@ function openStatsWindow() {
   statsWindow.setMenu(null);
   statsWindow.loadFile('stats.html');
 
-  statsWindow.webContents.on('did-finish-load', () => {
+  statsWindow.webContents.on('dom-ready', () => {
+    if (!statsWindow) return;
     const statsData = getStatsForWindow();
     statsData.theme = settings.theme;
     statsWindow.webContents.send('stats-load', statsData);
   });
+
+  revealWhenPainted(statsWindow);
 
   statsWindow.on('closed', () => {
     statsWindow = null;
@@ -617,6 +717,16 @@ ipcMain.on('settings-save', (event, newSettings) => {
   settings.sleepModeEnabled = newSettings.sleepModeEnabled;
   settings.sleepModeBedtime = newSettings.sleepModeBedtime;
   settings.theme = newSettings.theme || 'warm';
+  settings.gameLimiterEnabled = newSettings.gameLimiterEnabled || false;
+  settings.gameLimitHours = newSettings.gameLimitHours || 4;
+  settings.gameList = Array.isArray(newSettings.gameList) ? newSettings.gameList : [];
+  settings.gameNames = (newSettings.gameNames && typeof newSettings.gameNames === 'object')
+    ? newSettings.gameNames : {};
+  // Pause-reminders list: lowercased and pruned to exes still in gameList.
+  const listLower = settings.gameList.map((e) => String(e).toLowerCase());
+  settings.gamePauseList = (Array.isArray(newSettings.gamePauseList) ? newSettings.gamePauseList : [])
+    .map((e) => String(e).toLowerCase())
+    .filter((e) => listLower.includes(e));
   saveSettings();
 
   app.setLoginItemSettings({
@@ -630,8 +740,39 @@ ipcMain.on('settings-save', (event, newSettings) => {
   // Reschedule sleep mode timers
   scheduleSleepModeTimers();
 
+  // Restart the game limiter with the new config.
+  stopGameLimiter();
+  startGameLimiter();
+
+  // Ensure the elevated kill task exists (one UAC prompt) whenever the limiter is
+  // on. Only prompts if the task is missing — re-saving with it present is silent.
+  if (settings.gameLimiterEnabled) {
+    ensureKillTask();
+  }
+
   if (settingsWindow) {
     settingsWindow.close();
+  }
+});
+
+ipcMain.handle('game-pick-exe', async () => {
+  const result = await dialog.showOpenDialog({
+    title: 'Select a game executable',
+    properties: ['openFile'],
+    filters: [{ name: 'Executables', extensions: ['exe'] }]
+  });
+  if (result.canceled || !result.filePaths.length) return null;
+  return path.basename(result.filePaths[0]).toLowerCase();
+});
+
+// Scan installed Steam games and suggest each game's main executable.
+// Returns [] on any failure (Steam not found, permission, etc.).
+ipcMain.handle('steam-list-games', async () => {
+  try {
+    return await steamScan.listGames();
+  } catch (err) {
+    console.error('steam-scan: failed to list games:', err.message);
+    return [];
   }
 });
 
@@ -738,6 +879,8 @@ function showSleepWarningWindow(minutesLeft) {
     fullscreen: true,
     simpleFullscreen: true,
     kiosk: true,
+    show: false,
+    backgroundColor: themeBg('overlay'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -749,12 +892,17 @@ function showSleepWarningWindow(minutesLeft) {
   sleepWarningWindow.setVisibleOnAllWorkspaces(true);
 
   sleepWarningWindow.loadFile('sleep-warning.html');
-  sleepWarningWindow.webContents.on('did-finish-load', () => {
+  sleepWarningWindow.webContents.on('dom-ready', () => {
+    if (!sleepWarningWindow) return;
     sleepWarningWindow.webContents.send('sleep-warning-start', {
       minutesLeft: minutesLeft,
       theme: settings.theme
     });
-    sleepWarningWindow.focus();
+  });
+
+  revealWhenPainted(sleepWarningWindow, (win) => {
+    win.show();
+    win.focus();
   });
 
   sleepWarningWindow.on('closed', () => {
@@ -800,6 +948,8 @@ function showShutdownPromptWindow() {
     fullscreen: true,
     simpleFullscreen: true,
     kiosk: true,
+    show: false,
+    backgroundColor: themeBg('overlay'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -811,12 +961,17 @@ function showShutdownPromptWindow() {
   shutdownPromptWindow.setVisibleOnAllWorkspaces(true);
 
   shutdownPromptWindow.loadFile('shutdown-prompt.html');
-  shutdownPromptWindow.webContents.on('did-finish-load', () => {
+  shutdownPromptWindow.webContents.on('dom-ready', () => {
+    if (!shutdownPromptWindow) return;
     shutdownPromptWindow.webContents.send('shutdown-prompt-start', {
       snoozesLeft: snoozesRemaining,
       theme: settings.theme
     });
-    shutdownPromptWindow.focus();
+  });
+
+  revealWhenPainted(shutdownPromptWindow, (win) => {
+    win.show();
+    win.focus();
   });
 
   shutdownPromptWindow.on('closed', () => {
@@ -869,6 +1024,523 @@ ipcMain.on('shutdown-execute', () => {
   executeSystemShutdown();
 });
 
+// =====================
+// Game Limiter
+// =====================
+
+const GAME_POLL_IDLE_MS = 10 * 60 * 1000;   // 10 min while not gaming
+const GAME_POLL_ACTIVE_MS = 60 * 1000;      // 1 min during an active session
+const GAME_STATS_WRITE_MS = 5 * 60 * 1000;  // throttle disk writes during play
+let gamePollTimer = null;
+let gamePollMode = null;
+let lastGameStatsWrite = 0;
+
+function normalizeProcName(name) {
+  return String(name || '').toLowerCase().replace(/\.exe$/, '');
+}
+
+// Returns the matching gameList entry (e.g. "cs2.exe") or null.
+function matchGameProcess(name) {
+  const n = normalizeProcName(name);
+  if (!n) return null;
+  for (const entry of (settings.gameList || [])) {
+    if (normalizeProcName(entry) === n) return entry;
+  }
+  return null;
+}
+
+function toImageName(entry) {
+  const n = normalizeProcName(entry);
+  // Keep only safe image-name characters.
+  if (!n || !/^[a-z0-9._-]+$/.test(n)) return '';
+  return `${n}.exe`;
+}
+
+// Live daily total incl. the in-progress session (for tooltip display).
+function liveGameMinutes() {
+  let total = getTodayGameMinutes();
+  if (gameSessionStart) {
+    total += (Date.now() - gameSessionStart) / 60000;
+  }
+  return total;
+}
+
+// Accrue elapsed game time into the day stats and reset the session baseline
+// (crash-safe, no double count). The in-memory total is always current; the disk
+// write is throttled during play and forced on session end / enforce / suspend / stop.
+function flushGameTime(force = false) {
+  if (!gameSessionStart) return;
+  const now = Date.now();
+  const elapsedMin = (now - gameSessionStart) / 60000;
+  const day = ensureTodayDayStats();
+  day.gameMinutes = Math.round((day.gameMinutes + elapsedMin) * 10) / 10;
+  gameSessionStart = now;
+  if (force || now - lastGameStatsWrite >= GAME_STATS_WRITE_MS) {
+    lastGameStatsWrite = now;
+    saveStats();
+  }
+}
+
+function clearGameTimers() {
+  for (const t of gameTimers) clearTimeout(t);
+  gameTimers = [];
+}
+
+function setGamePollMode(mode) {
+  if (gamePollMode === mode && gamePollTimer) return;
+  gamePollMode = mode;
+  if (gamePollTimer) clearInterval(gamePollTimer);
+  const ms = mode === 'active' ? GAME_POLL_ACTIVE_MS : GAME_POLL_IDLE_MS;
+  gamePollTimer = setInterval(() => gameMonitor.poll(), ms);
+}
+
+function scheduleGameTimers() {
+  clearGameTimers();
+  const limitMin = (settings.gameLimitHours || 4) * 60;
+  const remaining = limitMin - getTodayGameMinutes();
+
+  if (remaining <= 0) {
+    enforceGameLimit();
+    return;
+  }
+
+  const min = (m) => Math.max(0, m) * 60 * 1000;
+  if (remaining > 30) {
+    gameTimers.push(setTimeout(() => showGameWarning(30), min(remaining - 30)));
+  }
+  if (remaining > 5) {
+    gameTimers.push(setTimeout(() => showGameWarning(5), min(remaining - 5)));
+  }
+  gameTimers.push(setTimeout(() => enforceGameLimit(), min(remaining)));
+}
+
+// Is this game flagged to pause break reminders while it runs?
+function gameShouldPauseReminders(entry) {
+  const base = normalizeProcName(entry);
+  return (settings.gamePauseList || []).some((e) => normalizeProcName(e) === base);
+}
+
+// Pause break reminders for a pause-flagged game. No-op if the user already paused
+// manually (we don't take over a manual pause).
+function applyGamePause(entry) {
+  if (gameAutoPaused || isPaused) return;
+  if (!gameShouldPauseReminders(entry)) return;
+  pauseTimer();
+  gameAutoPaused = true;
+  updateTrayMenu();
+  updateTrayTooltip();
+  console.log(`game-limiter: break reminders paused for ${entry}`);
+}
+
+// Resume reminders if they were auto-paused by a game (manual pause is left alone).
+function clearGamePause() {
+  if (!gameAutoPaused) return;
+  gameAutoPaused = false;
+  if (!breakWindow) resumeTimer();
+  updateTrayMenu();
+  updateTrayTooltip();
+  console.log('game-limiter: break reminders resumed after game');
+}
+
+function startGameSession(matchedEntry) {
+  gameSessionStart = Date.now();
+  currentGameProcess = matchedEntry;
+  setGamePollMode('active');
+  scheduleGameTimers();
+  applyGamePause(matchedEntry);
+  updateTrayTooltip();
+  console.log(`game-limiter: session start (${matchedEntry})`);
+}
+
+// Clear session runtime state without persisting (used after flush/enforce).
+function resetGameSessionState() {
+  gameSessionStart = null;
+  currentGameProcess = null;
+  clearGameTimers();
+  setGamePollMode('idle');
+  clearGamePause();
+}
+
+function endGameSession() {
+  flushGameTime(true);
+  console.log(`game-limiter: session end (today ${getTodayGameMinutes().toFixed(1)} min)`);
+  resetGameSessionState();
+  updateTrayTooltip();
+}
+
+// --- Elevated kill via a Windows Scheduled Task ---------------------------
+// Protected/elevated games (e.g. Apex Legends under EAC) reject `taskkill` from
+// our non-elevated process ("Access denied"). To kill them we register a single
+// on-demand Scheduled Task with HighestAvailable run level (one UAC prompt, when
+// the user enables the feature), then trigger it silently via `schtasks /run`.
+// The task is inert otherwise — it has no trigger, so it never fires on its own.
+const KILL_TASK_NAME = 'StandBuddy-KillGame';
+
+function getKillScriptPath() { return path.join(app.getPath('userData'), 'kill-game.ps1'); }
+function getKillTargetPath() { return path.join(app.getPath('userData'), 'kill-target.txt'); }
+function getKillTaskXmlPath() { return path.join(app.getPath('userData'), 'kill-task.xml'); }
+
+// The elevated helper script. Reads the target exe from kill-target.txt, validates
+// it, cross-checks it against gameList in settings.json (so a tampered target file
+// can only ever kill a listed game, never an arbitrary process), then taskkills it.
+// String.raw keeps backslashes literal; the script uses no ${...} so interpolation
+// does not fire. All paths are derived from the script's own folder ($PSScriptRoot),
+// which is userData — alongside settings.json and kill-target.txt.
+const KILL_SCRIPT = String.raw`$ErrorActionPreference = 'SilentlyContinue'
+$dir = $PSScriptRoot
+$targetFile = Join-Path $dir 'kill-target.txt'
+$cfgFile = Join-Path $dir 'settings.json'
+if (-not (Test-Path $targetFile)) { return }
+$img = (Get-Content -Raw -LiteralPath $targetFile).Trim().ToLower()
+if ($img -notmatch '^[a-z0-9._-]+\.exe$') { return }
+$base = $img -replace '\.exe$', ''
+$allowed = $false
+try {
+  $cfg = Get-Content -Raw -LiteralPath $cfgFile | ConvertFrom-Json
+  foreach ($g in $cfg.gameList) {
+    if ((([string]$g) -replace '\.exe$', '').ToLower() -eq $base) { $allowed = $true; break }
+  }
+} catch { }
+if ($allowed) { & taskkill.exe /f /im $img | Out-Null }
+`;
+
+function xmlEscape(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Task XML: no <Triggers> (never self-fires), on-demand only, HighestAvailable so
+// the kill runs with the user's elevated token.
+function buildKillTaskXml() {
+  const args = `-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File "${getKillScriptPath()}"`;
+  return `<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>StandBuddy game-limiter enforcement (kills a listed game when the daily limit is reached).</Description>
+  </RegistrationInfo>
+  <Triggers />
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>HighestAvailable</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <ExecutionTimeLimit>PT1M</ExecutionTimeLimit>
+    <Priority>7</Priority>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>powershell.exe</Command>
+      <Arguments>${xmlEscape(args)}</Arguments>
+    </Exec>
+  </Actions>
+</Task>`;
+}
+
+// Is the elevated kill task registered?
+function killTaskExists() {
+  return new Promise((resolve) => {
+    execFile('schtasks', ['/query', '/tn', KILL_TASK_NAME], (error) => resolve(!error));
+  });
+}
+
+// Register the kill task. Creating a HighestAvailable task requires admin, so the
+// `schtasks /create` runs through one UAC prompt (Start-Process -Verb RunAs).
+// Resolves true once the task is verifiably present.
+async function ensureKillTask() {
+  if (await killTaskExists()) return true;
+  try {
+    fs.writeFileSync(getKillScriptPath(), KILL_SCRIPT, 'utf8');
+    // schtasks expects UTF-16 XML with a BOM.
+    fs.writeFileSync(getKillTaskXmlPath(), '﻿' + buildKillTaskXml(), 'utf16le');
+  } catch (err) {
+    console.error('game-limiter: failed to write kill task files:', err.message);
+    return false;
+  }
+  const createArgs = `/create /tn ${KILL_TASK_NAME} /xml "${getKillTaskXmlPath()}" /f`;
+  const psCmd = `try { $p = Start-Process -FilePath schtasks.exe -ArgumentList '${createArgs.replace(/'/g, "''")}' -Verb RunAs -Wait -WindowStyle Hidden -PassThru; exit $p.ExitCode } catch { exit 1 }`;
+  await new Promise((resolve) => {
+    execFile('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', psCmd], () => resolve());
+  });
+  const ok = await killTaskExists();
+  if (!ok) console.error('game-limiter: kill task was not registered (UAC declined?)');
+  return ok;
+}
+
+// Direct (non-elevated) taskkill. Works for unprotected games or if the app itself
+// is elevated; surfaces stderr instead of swallowing it (silent-loop bug fix).
+function directTaskkill(image) {
+  execFile('taskkill', ['/f', '/im', image], (error, stdout, stderr) => {
+    if (error) {
+      const msg = (stderr && stderr.trim()) || error.message;
+      console.error(`game-limiter: taskkill failed for ${image}: ${msg}`);
+    } else {
+      console.log(`game-limiter: killed ${image}`);
+    }
+  });
+}
+
+function killGame(entry) {
+  const image = toImageName(entry);
+  // Image name is normalized to [a-z0-9._-]+.exe; reject anything else as a guard.
+  if (!image || !/^[a-z0-9._-]+\.exe$/.test(image)) return;
+  // Hand the target to the elevated task, then trigger it. The task is the only
+  // way to kill protected games; if it isn't registered, fall back to a direct
+  // (likely failing, but now visible) taskkill.
+  let wroteTarget = false;
+  try {
+    fs.writeFileSync(getKillTargetPath(), image, 'utf8');
+    wroteTarget = true;
+  } catch (err) {
+    console.error('game-limiter: failed to write kill target:', err.message);
+  }
+  if (!wroteTarget) {
+    directTaskkill(image);
+    return;
+  }
+  execFile('schtasks', ['/run', '/tn', KILL_TASK_NAME], (error) => {
+    if (error) {
+      console.error('game-limiter: kill task unavailable, falling back to direct taskkill:', error.message);
+      directTaskkill(image);
+    } else {
+      console.log(`game-limiter: kill task triggered for ${image}`);
+    }
+  });
+}
+
+function enforceGameLimit() {
+  flushGameTime(true);
+  gameLimitReachedToday = true;
+  gameLimitDayKey = getTodayDateString();
+  const proc = currentGameProcess;
+  resetGameSessionState();
+  // Keep polling fast for the rest of the day so a relaunch is killed within
+  // one active interval instead of up to one idle interval (~10 min) later.
+  setGamePollMode('active');
+  if (proc) killGame(proc);
+  showGameBlockedWindow();
+  updateTrayTooltip();
+  console.log('game-limiter: daily limit reached, enforcing');
+}
+
+function handleForeground(name) {
+  if (!settings.gameLimiterEnabled) return;
+  ensureGameDay();
+
+  const matched = matchGameProcess(name);
+
+  // Limit already reached today: kill any relaunch of a listed game.
+  if (gameLimitReachedToday) {
+    if (gameSessionStart) resetGameSessionState();
+    if (matched) {
+      killGame(matched);
+      showGameBlockedWindow();
+    }
+    return;
+  }
+
+  if (matched) {
+    if (!gameSessionStart) {
+      startGameSession(matched);
+    } else {
+      currentGameProcess = matched;
+      flushGameTime();        // persist incremental time (crash-safe)
+      updateTrayTooltip();
+    }
+  } else if (gameSessionStart) {
+    endGameSession();
+  }
+}
+
+function closeGameWarning() {
+  if (gameWarningCloseTimer) {
+    clearTimeout(gameWarningCloseTimer);
+    gameWarningCloseTimer = null;
+  }
+  if (gameWarningWindow) {
+    gameWarningWindow.destroy();
+    gameWarningWindow = null;
+  }
+}
+
+function showGameWarning(minutesLeft) {
+  closeGameWarning(); // replace any existing toast
+
+  const W = 380;
+  const H = 150;
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const area = primaryDisplay.workArea; // excludes taskbar
+  const x = area.x + area.width - W;
+  const y = area.y + area.height - H;
+
+  gameWarningWindow = new BrowserWindow({
+    width: W,
+    height: H,
+    x: x,
+    y: y,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    focusable: false,
+    hasShadow: false,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  gameWarningWindow.setAlwaysOnTop(true, 'screen-saver');
+  gameWarningWindow.setVisibleOnAllWorkspaces(true);
+  gameWarningWindow.setIgnoreMouseEvents(true); // click-through, never blocks the game
+
+  gameWarningWindow.loadFile('game-warning.html');
+  gameWarningWindow.webContents.on('dom-ready', () => {
+    if (!gameWarningWindow) return;
+    gameWarningWindow.webContents.send('game-warning-start', {
+      minutesLeft,
+      theme: settings.theme
+    });
+  });
+
+  // showInactive: appear without stealing focus from the game.
+  revealWhenPainted(gameWarningWindow, (win) => win.showInactive());
+
+  gameWarningWindow.on('closed', () => {
+    gameWarningWindow = null;
+  });
+
+  // Auto-dismiss after the toast's slide-out animation (~7s).
+  gameWarningCloseTimer = setTimeout(closeGameWarning, 7500);
+}
+
+function closeGameBlockedWindow() {
+  if (gameBlockedCloseTimer) {
+    clearTimeout(gameBlockedCloseTimer);
+    gameBlockedCloseTimer = null;
+  }
+  if (gameBlockedWindow) {
+    gameBlockedWindow.setClosable(true);
+    gameBlockedWindow.setKiosk(false);
+    gameBlockedWindow.destroy();
+    gameBlockedWindow = null;
+  }
+}
+
+function showGameBlockedWindow() {
+  // Guard: re-launch attempts after the limit shouldn't stack overlays.
+  if (gameBlockedWindow) {
+    if (gameBlockedCloseTimer) clearTimeout(gameBlockedCloseTimer);
+    gameBlockedCloseTimer = setTimeout(closeGameBlockedWindow, 5500);
+    return;
+  }
+
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const { width, height } = primaryDisplay.size;
+
+  gameBlockedWindow = new BrowserWindow({
+    width: width,
+    height: height,
+    x: 0,
+    y: 0,
+    frame: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    closable: false,
+    focusable: true,
+    fullscreen: true,
+    simpleFullscreen: true,
+    kiosk: true,
+    show: false,
+    backgroundColor: themeBg('overlay'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+
+  gameBlockedWindow.setAlwaysOnTop(true, 'screen-saver');
+  gameBlockedWindow.setVisibleOnAllWorkspaces(true);
+
+  gameBlockedWindow.loadFile('game-blocked.html');
+  gameBlockedWindow.webContents.on('dom-ready', () => {
+    if (!gameBlockedWindow) return;
+    gameBlockedWindow.webContents.send('game-blocked-start', {
+      theme: settings.theme,
+      limitHours: settings.gameLimitHours || 4
+    });
+  });
+
+  revealWhenPainted(gameBlockedWindow, (win) => {
+    win.show();
+    win.focus();
+  });
+
+  gameBlockedWindow.on('closed', () => {
+    gameBlockedWindow = null;
+  });
+
+  // Game is already killed; no reason to hold the screen — auto-close.
+  gameBlockedCloseTimer = setTimeout(closeGameBlockedWindow, 5500);
+}
+
+let gamePowerHooksRegistered = false;
+
+// Register once: don't count OS sleep/suspend as game time.
+function registerGamePowerHooks() {
+  if (gamePowerHooksRegistered) return;
+  gamePowerHooksRegistered = true;
+  // Credit play time accrued right up to the moment of sleep.
+  powerMonitor.on('suspend', () => {
+    if (gameSessionStart) flushGameTime(true);
+  });
+  // Discard the suspended interval so it isn't billed as game time.
+  powerMonitor.on('resume', () => {
+    if (gameSessionStart) gameSessionStart = Date.now();
+  });
+}
+
+function startGameLimiter() {
+  if (!settings.gameLimiterEnabled) return;
+  ensureGameDay();
+  gameMonitor.startMonitor(handleForeground);
+  setGamePollMode('idle');
+  gameMonitor.poll(); // immediate first read
+  console.log('game-limiter: started');
+}
+
+function stopGameLimiter() {
+  if (gameSessionStart) flushGameTime(true);
+  closeGameWarning();
+  closeGameBlockedWindow();
+  resetGameSessionState();
+  if (gamePollTimer) {
+    clearInterval(gamePollTimer);
+    gamePollTimer = null;
+    gamePollMode = null;
+  }
+  gameMonitor.stopMonitor();
+}
+
 app.whenReady().then(() => {
   loadSettings();
   loadStats();
@@ -884,6 +1556,8 @@ app.whenReady().then(() => {
   startIntervalTimer();
   startTooltipInterval();
   scheduleSleepModeTimers();
+  registerGamePowerHooks();
+  startGameLimiter();
 
   app.on('window-all-closed', (e) => {
     e.preventDefault();
@@ -895,4 +1569,5 @@ app.on('before-quit', () => {
   if (breakTimer) clearTimeout(breakTimer);
   if (tooltipInterval) clearInterval(tooltipInterval);
   clearSleepModeTimers();
+  stopGameLimiter();
 });

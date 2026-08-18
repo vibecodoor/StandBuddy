@@ -6,7 +6,7 @@
   <title>StandBuddy Settings</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="themes.css">
   <style>
     :root {
@@ -268,7 +268,154 @@
       color: var(--text-muted);
       margin-left: 10px;
     }
-  </style>
+
+    /* Game limiter */
+    .game-limiter-settings {
+      margin-top: 16px;
+      padding-left: 30px;
+      display: none;
+    }
+    .game-limiter-settings.visible { display: block; }
+    .game-limiter-settings label { margin-bottom: 10px; }
+
+    .game-list {
+      list-style: none;
+      margin: 4px 0 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .game-list:empty { display: none; }
+
+    .game-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .game-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .game-pause {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .game-pause input { cursor: pointer; margin: 0; }
+
+    .game-remove {
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 0 4px;
+      transition: color 0.15s ease;
+    }
+    .game-remove:hover { color: var(--danger); }
+
+    .game-empty {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin: 4px 0 12px;
+    }
+
+    .btn-add-game {
+      padding: 9px 14px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      border: 1px dashed var(--border-subtle);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-add-game:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .game-add-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Steam scan panel */
+    .steam-scan-panel {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+    }
+    .steam-scan-panel.visible { display: block; }
+
+    .steam-scan-status {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin: 0 0 8px;
+    }
+    .steam-scan-status:empty { display: none; }
+
+    .steam-scan-list {
+      list-style: none;
+      margin: 0 0 10px;
+      padding: 0;
+      max-height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .steam-scan-list:empty { display: none; }
+
+    .steam-scan-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 8px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+    .steam-scan-item:hover { background: var(--accent-soft); }
+    .steam-scan-item input { margin: 0; cursor: pointer; }
+    .steam-scan-item.added { opacity: 0.5; cursor: default; }
+    .steam-scan-item.added:hover { background: transparent; }
+
+    .steam-scan-name { flex: 1; }
+    .steam-scan-exe {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .steam-scan-actions {
+      display: none;
+      gap: 8px;
+      align-items: center;
+    }
+    .steam-scan-actions.visible { display: flex; }
+</style>
 </head>
 <body>
   <h1>StandBuddy Settings</h1>
@@ -331,6 +478,41 @@
     </div>
   </div>
 
+  <div class="sleep-mode-section">
+    <div class="checkbox-group" style="border-top: none; margin-top: 0; padding-top: 0;">
+      <input type="checkbox" id="gameLimiterEnabled">
+      <label for="gameLimiterEnabled">Game Limiter</label>
+    </div>
+    <div class="game-limiter-settings" id="gameLimiterSettings">
+      <label>Daily limit</label>
+      <div class="input-row">
+        <input type="number" id="gameLimitHours" min="0.5" step="0.5" value="4">
+        <span>hours</span>
+      </div>
+
+      <label style="margin-top: 16px;">Games</label>
+      <ul class="game-list" id="gameList"></ul>
+      <p class="game-empty" id="gameEmpty">No games added yet.</p>
+      <div class="game-add-row">
+        <button type="button" class="btn-add-game" id="addGameBtn">+ Add game…</button>
+        <button type="button" class="btn-add-game" id="scanSteamBtn">Scan Steam games</button>
+      </div>
+
+      <div class="steam-scan-panel" id="steamScanPanel">
+        <p class="steam-scan-status" id="steamScanStatus"></p>
+        <ul class="steam-scan-list" id="steamScanList"></ul>
+        <div class="steam-scan-actions" id="steamScanActions">
+          <button type="button" class="btn-add-game" id="steamAddSelectedBtn">Add selected</button>
+          <button type="button" class="game-remove" id="steamScanCloseBtn" title="Close" style="font-size:13px;">Close</button>
+        </div>
+      </div>
+
+      <p class="sleep-hint" style="margin-left: 0; margin-top: 8px; display: block;">
+        Games are closed once the daily limit is reached.
+      </p>
+    </div>
+  </div>
+
   <div class="checkbox-group">
     <input type="checkbox" id="launchAtLogin">
     <label for="launchAtLogin">Launch at startup</label>
@@ -356,7 +538,185 @@
     const saveBtn = document.getElementById('saveBtn');
     const cancelBtn = document.getElementById('cancelBtn');
 
+    const gameLimiterCheckbox = document.getElementById('gameLimiterEnabled');
+    const gameLimiterSettings = document.getElementById('gameLimiterSettings');
+    const gameLimitHoursInput = document.getElementById('gameLimitHours');
+    const gameListEl = document.getElementById('gameList');
+    const gameEmptyEl = document.getElementById('gameEmpty');
+    const addGameBtn = document.getElementById('addGameBtn');
+    const scanSteamBtn = document.getElementById('scanSteamBtn');
+    const steamScanPanel = document.getElementById('steamScanPanel');
+    const steamScanStatus = document.getElementById('steamScanStatus');
+    const steamScanList = document.getElementById('steamScanList');
+    const steamScanActions = document.getElementById('steamScanActions');
+    const steamAddSelectedBtn = document.getElementById('steamAddSelectedBtn');
+    const steamScanCloseBtn = document.getElementById('steamScanCloseBtn');
+
     let currentTheme = 'warm';
+    let gameList = [];
+    let gameNames = {}; // exe (lowercase) -> friendly display name
+    let gamePauseSet = new Set(); // exes (lowercase) that pause break reminders
+
+    function displayName(exe) {
+      return gameNames[String(exe).toLowerCase()] || exe;
+    }
+
+    function renderGameList() {
+      gameListEl.innerHTML = '';
+      gameEmptyEl.style.display = gameList.length ? 'none' : 'block';
+      gameList.forEach((name, idx) => {
+        const lower = String(name).toLowerCase();
+        const li = document.createElement('li');
+        li.className = 'game-item';
+
+        const span = document.createElement('span');
+        span.className = 'game-name';
+        span.textContent = displayName(name);
+        span.title = name;
+
+        const pauseLabel = document.createElement('label');
+        pauseLabel.className = 'game-pause';
+        pauseLabel.title = 'Pause stand-up reminders while this game is running';
+        const pauseCb = document.createElement('input');
+        pauseCb.type = 'checkbox';
+        pauseCb.checked = gamePauseSet.has(lower);
+        pauseCb.addEventListener('change', () => {
+          if (pauseCb.checked) gamePauseSet.add(lower);
+          else gamePauseSet.delete(lower);
+        });
+        pauseLabel.appendChild(pauseCb);
+        pauseLabel.appendChild(document.createTextNode('Pause reminders'));
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'game-remove';
+        btn.textContent = '×';
+        btn.title = 'Remove';
+        btn.addEventListener('click', () => {
+          const [removed] = gameList.splice(idx, 1);
+          if (removed) {
+            delete gameNames[String(removed).toLowerCase()];
+            gamePauseSet.delete(String(removed).toLowerCase());
+          }
+          renderGameList();
+        });
+
+        li.appendChild(span);
+        li.appendChild(pauseLabel);
+        li.appendChild(btn);
+        gameListEl.appendChild(li);
+      });
+    }
+
+    gameLimiterCheckbox.addEventListener('change', () => {
+      gameLimiterSettings.classList.toggle('visible', gameLimiterCheckbox.checked);
+    });
+
+    // Add an executable to the list (deduped, case-insensitive). Returns true if added.
+    // friendlyName (optional) is stored for display instead of the exe name.
+    function addGameByExe(name, friendlyName) {
+      const lower = String(name || '').toLowerCase();
+      if (!lower) return false;
+      if (friendlyName) gameNames[lower] = friendlyName;
+      if (gameList.some(g => g.toLowerCase() === lower)) return false;
+      gameList.push(lower);
+      renderGameList();
+      return true;
+    }
+
+    addGameBtn.addEventListener('click', async () => {
+      const name = await window.electronAPI.pickGameExe();
+      if (name) addGameByExe(name);
+    });
+
+    // --- Steam scan ---
+    function isGameAdded(exe) {
+      return gameList.some(g => g.toLowerCase() === String(exe).toLowerCase());
+    }
+
+    function renderScanList(games) {
+      steamScanList.innerHTML = '';
+      games.forEach((game) => {
+        const li = document.createElement('li');
+        li.className = 'steam-scan-item';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.dataset.exe = game.exe;
+        cb.dataset.name = game.name;
+
+        const name = document.createElement('span');
+        name.className = 'steam-scan-name';
+        name.textContent = game.name;
+
+        const exe = document.createElement('span');
+        exe.className = 'steam-scan-exe';
+        exe.textContent = game.exe;
+
+        if (isGameAdded(game.exe)) {
+          li.classList.add('added');
+          cb.checked = true;
+          cb.disabled = true;
+          exe.textContent = game.exe + ' · added';
+        } else {
+          li.addEventListener('click', (e) => {
+            if (e.target !== cb) cb.checked = !cb.checked;
+          });
+        }
+
+        li.appendChild(cb);
+        li.appendChild(name);
+        li.appendChild(exe);
+        steamScanList.appendChild(li);
+      });
+      steamScanActions.classList.toggle('visible', games.length > 0);
+    }
+
+    scanSteamBtn.addEventListener('click', async () => {
+      steamScanPanel.classList.add('visible');
+      steamScanList.innerHTML = '';
+      steamScanActions.classList.remove('visible');
+      steamScanStatus.textContent = 'Scanning Steam libraries…';
+      scanSteamBtn.disabled = true;
+      try {
+        const games = await window.electronAPI.scanSteamGames();
+        if (!games || !games.length) {
+          steamScanStatus.textContent = 'No Steam games found. Use "+ Add game…" to pick an .exe manually.';
+          return;
+        }
+        steamScanStatus.textContent = `Found ${games.length} game${games.length === 1 ? '' : 's'}. Tick the ones to limit.`;
+        renderScanList(games);
+      } catch (err) {
+        steamScanStatus.textContent = 'Could not scan Steam. Use "+ Add game…" instead.';
+      } finally {
+        scanSteamBtn.disabled = false;
+      }
+    });
+
+    steamAddSelectedBtn.addEventListener('click', () => {
+      const boxes = steamScanList.querySelectorAll('input[type="checkbox"]:checked:not(:disabled)');
+      let added = 0;
+      boxes.forEach((cb) => { if (addGameByExe(cb.dataset.exe, cb.dataset.name)) added++; });
+      steamScanPanel.classList.remove('visible');
+      steamScanList.innerHTML = '';
+      steamScanStatus.textContent = '';
+      steamScanActions.classList.remove('visible');
+    });
+
+    steamScanCloseBtn.addEventListener('click', () => {
+      steamScanPanel.classList.remove('visible');
+      steamScanList.innerHTML = '';
+      steamScanStatus.textContent = '';
+      steamScanActions.classList.remove('visible');
+    });
+
+    function validateGameLimit() {
+      const val = parseFloat(gameLimitHoursInput.value);
+      const isValid = !isNaN(val) && val >= 0.5;
+      gameLimitHoursInput.classList.toggle('error', !isValid);
+      return isValid;
+    }
+    gameLimitHoursInput.addEventListener('input', validateGameLimit);
 
     function applyTheme(theme) {
       document.documentElement.className = `theme-${theme}`;
@@ -428,6 +788,15 @@
       sleepModeCheckbox.checked = settings.sleepModeEnabled || false;
       sleepModeBedtime.value = settings.sleepModeBedtime || '22:00';
       sleepModeSettings.classList.toggle('visible', sleepModeCheckbox.checked);
+      gameLimiterCheckbox.checked = settings.gameLimiterEnabled || false;
+      gameLimitHoursInput.value = settings.gameLimitHours || 4;
+      gameList = Array.isArray(settings.gameList) ? settings.gameList.slice() : [];
+      gameNames = (settings.gameNames && typeof settings.gameNames === 'object')
+        ? { ...settings.gameNames } : {};
+      gamePauseSet = new Set(Array.isArray(settings.gamePauseList)
+        ? settings.gamePauseList.map((e) => String(e).toLowerCase()) : []);
+      gameLimiterSettings.classList.toggle('visible', gameLimiterCheckbox.checked);
+      renderGameList();
       applyTheme(settings.theme || 'warm');
       updatePresetButtons(intervalPresets, intervalInput);
       updatePresetButtons(breakPresets, breakInput);
@@ -445,6 +814,10 @@
         breakInput.focus();
         return;
       }
+      if (gameLimiterCheckbox.checked && !validateGameLimit()) {
+        gameLimitHoursInput.focus();
+        return;
+      }
 
       window.electronAPI.saveSettings({
         interval: Math.max(1, parseInt(intervalInput.value, 10)),
@@ -452,7 +825,18 @@
         launchAtLogin: launchAtLoginCheckbox.checked,
         sleepModeEnabled: sleepModeCheckbox.checked,
         sleepModeBedtime: sleepModeBedtime.value,
-        theme: currentTheme
+        theme: currentTheme,
+        gameLimiterEnabled: gameLimiterCheckbox.checked,
+        gameLimitHours: Math.max(0.5, parseFloat(gameLimitHoursInput.value) || 4),
+        gameList: gameList,
+        // Only keep names for exes still in the list.
+        gameNames: gameList.reduce((acc, exe) => {
+          const k = String(exe).toLowerCase();
+          if (gameNames[k]) acc[k] = gameNames[k];
+          return acc;
+        }, {}),
+        // Only keep pause flags for exes still in the list.
+        gamePauseList: gameList.filter((exe) => gamePauseSet.has(String(exe).toLowerCase()))
       });
     });
 

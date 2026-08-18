@@ -26,6 +26,15 @@ A small Windows tray application that reminds you to take standing breaks.
 - Shutdown prompt with countdown and snooze options (3 max)
 - Helps maintain a consistent sleep schedule
 
+### Game Limiter (Windows)
+
+- Set a daily gaming budget (default 4 hours) shared across all your games
+- Add games with a file picker, or scan your Steam library and pick from the list
+- Non-blocking corner warnings at 30 and 5 minutes remaining, with a chime
+- When the budget runs out, the game is closed — including anti-cheat titles
+- Optionally pause break reminders while a game is running
+- No bypass: the only way out is turning the feature off in Settings
+
 ### Themes
 
 - 6 color palettes: Warm, Ocean, Forest, Lavender, Slate, Rose
