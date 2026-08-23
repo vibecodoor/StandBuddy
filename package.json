@@ -1,6 +1,6 @@
 {
   "name": "standbuddy",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A tray app that reminds you to take standing breaks",
   "main": "main.js",
   "scripts": {
@@ -31,6 +31,7 @@
       "steam-scan.js",
       "*.html",
       "*.css",
+      "fonts/*.woff2",
       "tips.json"
     ],
     "extraResources": [

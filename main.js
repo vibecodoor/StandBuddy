@@ -54,6 +54,13 @@ const defaultSettings = {
   gamePauseList: [] // exes (lowercase) that pause break reminders while running
 };
 
+// A second instance would mean two trays, duplicate overlays and double game-time
+// accounting against the same stats.json — refuse to start one. exit(), not quit():
+// quit() waits for 'ready' and lets startup run, flashing a second tray first.
+if (!app.requestSingleInstanceLock()) {
+  app.exit(0);
+}
+
 let settings = { ...defaultSettings };
 let tips = [];
 
@@ -134,13 +141,14 @@ function ensureTodayStats() {
   }
 }
 
+// Reset the "limit reached" flag when the calendar day changes.
+// Returns true when the day just rolled over, so callers can re-plan.
 function ensureGameDay() {
-  // Reset the "limit reached" flag when the calendar day changes.
   const today = getTodayDateString();
-  if (gameLimitDayKey !== today) {
-    gameLimitDayKey = today;
-    gameLimitReachedToday = false;
-  }
+  if (gameLimitDayKey === today) return false;
+  gameLimitDayKey = today;
+  gameLimitReachedToday = false;
+  return true;
 }
 
 function getTodayGameMinutes() {
@@ -705,12 +713,19 @@ ipcMain.on('stats-reset-request', () => {
 
   stats = { ...defaultStats };
 
+  // The tray tooltip counts today's breaks from settings — reset that too,
+  // or it keeps showing the pre-reset count until midnight.
+  settings.todayBreaks = 0;
+  saveSettings();
+  updateTrayTooltip();
+
   if (statsWindow) {
     statsWindow.webContents.send('stats-reset', getStatsForWindow());
   }
 });
 
 ipcMain.on('settings-save', (event, newSettings) => {
+  const intervalChanged = newSettings.interval !== settings.interval;
   settings.interval = newSettings.interval;
   settings.breakDuration = newSettings.breakDuration;
   settings.launchAtLogin = newSettings.launchAtLogin;
@@ -733,7 +748,9 @@ ipcMain.on('settings-save', (event, newSettings) => {
     openAtLogin: settings.launchAtLogin
   });
 
-  if (!isPaused && !breakWindow) {
+  // Only restart the countdown when the interval actually changed — a theme or
+  // game-list save must not reset progress toward the next break.
+  if (intervalChanged && !isPaused && !breakWindow) {
     startIntervalTimer();
   }
 
@@ -815,6 +832,11 @@ function clearSleepModeTimers() {
   sleepModeTimers = [];
 }
 
+// setTimeout pauses during system sleep and fires late on wake. A bedtime timer
+// that wakes up hours past its moment (machine slept overnight) must not shut
+// the computer down at 9am — past this staleness window it re-arms for tonight.
+const SLEEP_STALE_MS = 6 * 60 * 60 * 1000;
+
 function scheduleSleepModeTimers() {
   clearSleepModeTimers();
 
@@ -837,7 +859,10 @@ function scheduleSleepModeTimers() {
 
     if (delay > 0) {
       const timer = setTimeout(() => {
-        showSleepWarningWindow(minutes);
+        // Fired late (system sleep): show the real remaining time, and skip
+        // the warning entirely once bedtime has already arrived.
+        const minutesLeft = Math.round((bedtimeMs - Date.now()) / 60000);
+        if (minutesLeft >= 1) showSleepWarningWindow(minutesLeft);
       }, delay);
       sleepModeTimers.push(timer);
     }
@@ -847,6 +872,10 @@ function scheduleSleepModeTimers() {
   const shutdownDelay = bedtimeMs - now;
   if (shutdownDelay > 0) {
     const timer = setTimeout(() => {
+      if (Date.now() - bedtimeMs > SLEEP_STALE_MS) {
+        scheduleSleepModeTimers(); // woke long past bedtime — re-arm for tonight
+        return;
+      }
       snoozesRemaining = 3;
       showShutdownPromptWindow();
     }, shutdownDelay);
@@ -1014,7 +1043,12 @@ ipcMain.on('shutdown-snooze', (event, newSnoozesLeft) => {
   closeShutdownPromptWindow();
 
   // Schedule next shutdown prompt in 5 minutes
+  const promptDue = Date.now() + 5 * 60 * 1000;
   const snoozeTimer = setTimeout(() => {
+    if (Date.now() - promptDue > SLEEP_STALE_MS) {
+      scheduleSleepModeTimers(); // slept through the snooze into morning — re-arm for tonight
+      return;
+    }
     showShutdownPromptWindow();
   }, 5 * 60 * 1000);
   sleepModeTimers.push(snoozeTimer);
@@ -1333,7 +1367,7 @@ function enforceGameLimit() {
 
 function handleForeground(name) {
   if (!settings.gameLimiterEnabled) return;
-  ensureGameDay();
+  const dayChanged = ensureGameDay();
 
   const matched = matchGameProcess(name);
 
@@ -1353,10 +1387,15 @@ function handleForeground(name) {
     } else {
       currentGameProcess = matched;
       flushGameTime();        // persist incremental time (crash-safe)
+      // The session crossed midnight: the timers armed at session start were
+      // computed from yesterday's remaining budget — re-plan against the fresh day.
+      if (dayChanged) scheduleGameTimers();
       updateTrayTooltip();
     }
   } else if (gameSessionStart) {
     endGameSession();
+  } else if (dayChanged) {
+    setGamePollMode('idle'); // new day: drop the post-limit fast polling
   }
 }
 

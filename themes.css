@@ -5,6 +5,24 @@
    Usage: Add class to <html> element, e.g. <html class="theme-warm">
 */
 
+/* Webfonts, bundled locally (latin subset) so no window ever touches the
+   network — the app is offline by design. DM Sans is a variable font
+   covering every weight the windows use (300–600). */
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 100 1000;
+  font-display: swap;
+  src: url('fonts/dm-sans-latin.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Serif Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('fonts/dm-serif-display-latin.woff2') format('woff2');
+}
+
 /* ========================================
    THEME: Warm (Default - Golden Amber)
    ======================================== */
